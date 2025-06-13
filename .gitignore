@@ -25,3 +25,20 @@ replay_pid*
 
 # Kotlin Gradle plugin data, see https://kotlinlang.org/docs/whatsnew20.html#new-directory-for-kotlin-data-in-gradle-projects
 .kotlin/
+
+# Mac OS X specific files
+.DS_Store
+
+# IntelliJ IDEA files
+.idea/
+
+# Gradle files
+.gradle/
+/build/
+.gradletasknamecache # Gradle task name cache
+
+# Coverage reports
+/build/reports/jacoco/
+/build/jacoco/
+
+
