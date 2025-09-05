@@ -23,6 +23,6 @@ class TriviaQuestionService(private val webClient: WebClient) {
             .retrieve()
             .awaitBody<TriviaApiResponse>()
 
-        return response.results
+        return response.results.map { it.decoded() }
     }
 }

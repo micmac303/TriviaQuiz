@@ -1,6 +1,7 @@
 package com.timeless.triviaquiz.service
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import org.springframework.web.util.HtmlUtils
 
 // Represents the top-level JSON object from the API response.
 data class TriviaApiResponse(
@@ -19,4 +20,13 @@ data class TriviaQuestion(
     val correctAnswer: String,
     @JsonProperty("incorrect_answers")
     val incorrectAnswers: List<String>
-)
+) {
+    fun decoded(): TriviaQuestion {
+        return this.copy(
+            category = HtmlUtils.htmlUnescape(category),
+            question = HtmlUtils.htmlUnescape(question),
+            correctAnswer = HtmlUtils.htmlUnescape(correctAnswer),
+            incorrectAnswers = incorrectAnswers.map { HtmlUtils.htmlUnescape(it) }
+        )
+    }
+}

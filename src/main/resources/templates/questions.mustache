@@ -1,0 +1,14 @@
+{{> header}}
+
+<h1>{{title}}</h1>
+
+<ul>
+  {{#questions}}
+    <li>
+      <strong>{{question}}</strong><br/>
+      Correct answer: <span>{{correctAnswer}}</span>
+    </li>
+  {{/questions}}
+</ul>
+
+{{> footer}}
