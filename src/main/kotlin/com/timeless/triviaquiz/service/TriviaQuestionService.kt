@@ -13,7 +13,7 @@ class TriviaQuestionService(private val webClient: WebClient) {
      * correct and incorrect answers are merged into a single shuffled list.
      */
     suspend fun startGame(amount: Int): List<QuizQuestion> {
-        return getNewQuestions(amount).mapIndexed { index, question ->
+        return getNewQuestions(amount, difficulty = "easy").mapIndexed { index, question ->
             val answers = (question.incorrectAnswers + question.correctAnswer).shuffled()
             QuizQuestion(
                 index = index,
@@ -30,15 +30,19 @@ class TriviaQuestionService(private val webClient: WebClient) {
     /**
      * Fetches a specified number of trivia questions from the Open Trivia Database.
      * @param amount The number of questions to fetch.
+     * @param difficulty Optional difficulty filter (e.g. "easy", "medium", "hard").
      * @return A list of TriviaQuestion objects.
      */
-    suspend fun getNewQuestions(amount: Int): List<TriviaQuestion> {
+    suspend fun getNewQuestions(amount: Int, difficulty: String? = null): List<TriviaQuestion> {
         val response = webClient.get()
             .uri { uriBuilder ->
                 uriBuilder
                     .path("/api.php")
                     .queryParam("amount", amount)
-                    .build()
+                if (difficulty != null) {
+                    uriBuilder.queryParam("difficulty", difficulty)
+                }
+                uriBuilder.build()
             }
             .retrieve()
             .awaitBody<TriviaApiResponse>()

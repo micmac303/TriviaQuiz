@@ -2,7 +2,9 @@
 
 <h1>{{title}}</h1>
 
-<form method="post" action="/game">
+<p>Time remaining: <strong><span id="timer">2:00</span></strong> &mdash; the quiz submits automatically when time runs out.</p>
+
+<form id="quiz-form" method="post" action="/game">
   {{#questions}}
     <fieldset>
       <legend>Question {{number}} <small>({{category}} &middot; {{difficulty}})</small></legend>
@@ -17,5 +19,27 @@
   {{/questions}}
   <button type="submit">Submit answers</button>
 </form>
+
+<script>
+  (function () {
+    var remaining = 120;
+    var el = document.getElementById('timer');
+    var form = document.getElementById('quiz-form');
+    function tick() {
+      var minutes = Math.floor(remaining / 60);
+      var seconds = remaining % 60;
+      el.textContent = minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+      if (remaining <= 0) {
+        // Programmatic submit bypasses "required" validation, sending whatever
+        // has been answered so far; unanswered questions are graded as wrong.
+        form.submit();
+        return;
+      }
+      remaining--;
+      setTimeout(tick, 1000);
+    }
+    tick();
+  })();
+</script>
 
 {{> footer}}
