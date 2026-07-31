@@ -2,6 +2,15 @@
 
 <h1>{{title}}</h1>
 
-<p><a href="/game">Start a new quiz</a></p>
+<form method="get" action="/game">
+  <label for="category">Choose a category:</label>
+  <select id="category" name="category">
+    <option value="all">All Categories</option>
+    {{#categories}}
+      <option value="{{id}}">{{name}}</option>
+    {{/categories}}
+  </select>
+  <button type="submit">Start quiz</button>
+</form>
 
 {{> footer}}

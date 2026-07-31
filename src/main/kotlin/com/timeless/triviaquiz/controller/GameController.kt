@@ -22,8 +22,14 @@ class GameController(
 
     /** Starts a new game: fetch questions, stash them in the session, render the form. */
     @GetMapping("/game")
-    suspend fun newGame(model: Model, session: HttpSession): String {
-        val questions = triviaQuestionService.startGame(QUESTION_COUNT)
+    suspend fun newGame(
+        @RequestParam(required = false) category: String?,
+        model: Model,
+        session: HttpSession
+    ): String {
+        // "all" (or anything non-numeric/absent) means no category filter.
+        val categoryId = category?.toIntOrNull()
+        val questions = triviaQuestionService.startGame(QUESTION_COUNT, categoryId)
         session.setAttribute(SESSION_KEY, questions)
         model["title"] = "Trivia Quiz"
         model["questions"] = questions

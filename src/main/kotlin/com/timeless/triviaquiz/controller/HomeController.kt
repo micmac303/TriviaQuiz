@@ -1,16 +1,20 @@
 package com.timeless.triviaquiz.controller
 
+import com.timeless.triviaquiz.service.TriviaQuestionService
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.ui.set
 import org.springframework.web.bind.annotation.GetMapping
 
 @Controller
-class HomeController {
+class HomeController(
+    private val triviaQuestionService: TriviaQuestionService
+) {
 
     @GetMapping("/")
-    fun home(model: Model): String {
+    suspend fun home(model: Model): String {
         model["title"] = "Home"
+        model["categories"] = triviaQuestionService.getCategories()
         return "home"
     }
 }
