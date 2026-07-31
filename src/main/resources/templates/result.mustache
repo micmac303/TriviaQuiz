@@ -1,0 +1,23 @@
+{{> header}}
+
+<h1>{{title}}</h1>
+
+<p>You scored <strong>{{score}}</strong> out of <strong>{{total}}</strong>.</p>
+
+<ol>
+  {{#results}}
+    <li>
+      <p>{{question}}</p>
+      {{#correct}}
+        <p>&#10003; Correct &mdash; you answered {{yourAnswer}}</p>
+      {{/correct}}
+      {{^correct}}
+        <p>&#10007; You answered {{yourAnswer}} &mdash; correct answer: {{correctAnswer}}</p>
+      {{/correct}}
+    </li>
+  {{/results}}
+</ol>
+
+<p><a href="/game">Play again</a></p>
+
+{{> footer}}

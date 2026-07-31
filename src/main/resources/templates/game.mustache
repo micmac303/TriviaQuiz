@@ -1,0 +1,21 @@
+{{> header}}
+
+<h1>{{title}}</h1>
+
+<form method="post" action="/game">
+  {{#questions}}
+    <fieldset>
+      <legend>Question {{number}} <small>({{category}} &middot; {{difficulty}})</small></legend>
+      <p>{{question}}</p>
+      {{#answers}}
+        <label>
+          <input type="radio" name="answer-{{index}}" value="{{.}}" required>
+          {{.}}
+        </label><br/>
+      {{/answers}}
+    </fieldset>
+  {{/questions}}
+  <button type="submit">Submit answers</button>
+</form>
+
+{{> footer}}
