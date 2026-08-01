@@ -159,9 +159,27 @@ class MultiplayerGameController(
         return "mp-winner"
     }
 
-    /** Clears all multiplayer state and returns to setup ("play again"). */
+    /**
+     * "Play again": drops the finished game and rebuilds the roster so each player keeps their name
+     * and category choices but starts with a clean, uncleared slate. Returns to setup where the same
+     * players can start another round (or be edited first).
+     */
     @PostMapping("/multiplayer/reset")
     fun reset(session: HttpSession): String {
+        val game = game(session)
+        if (game != null) {
+            val freshRoster = game.players.map { player ->
+                MpPlayer(name = player.name, categories = player.categories)
+            }.toMutableList()
+            session.setAttribute(ROSTER_KEY, freshRoster)
+        }
+        session.removeAttribute(GAME_KEY)
+        return "redirect:/multiplayer"
+    }
+
+    /** Clears all multiplayer state — roster and game — and returns to an empty setup. */
+    @PostMapping("/multiplayer/clear")
+    fun clear(session: HttpSession): String {
         session.removeAttribute(ROSTER_KEY)
         session.removeAttribute(GAME_KEY)
         return "redirect:/multiplayer"
