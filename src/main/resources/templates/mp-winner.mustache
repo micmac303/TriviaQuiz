@@ -1,0 +1,18 @@
+{{> header}}
+
+<h1>&#127881; {{winner}} wins!</h1>
+
+<h2>Final standings</h2>
+<ol>
+  {{#standings}}
+    <li>{{name}} &mdash; {{cleared}} of {{total}} categories cleared</li>
+  {{/standings}}
+</ol>
+
+<form method="post" action="/multiplayer/reset">
+  <button type="submit">Play again</button>
+</form>
+
+<p><a href="/">Back to home</a></p>
+
+{{> footer}}

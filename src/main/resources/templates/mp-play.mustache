@@ -1,0 +1,24 @@
+{{> header}}
+
+<h1>{{player}}'s turn</h1>
+
+<p>Cleared <strong>{{cleared}}</strong> of <strong>{{total}}</strong> categories &mdash;
+question {{step}} of 3 this turn (<strong>{{difficulty}}</strong>).</p>
+
+<form method="post" action="/multiplayer/answer">
+  {{#question}}
+    <fieldset>
+      <legend>{{category}} <small>({{difficulty}})</small></legend>
+      <p>{{question}}</p>
+      {{#answers}}
+        <label>
+          <input type="radio" name="answer" value="{{.}}" required>
+          {{.}}
+        </label><br/>
+      {{/answers}}
+    </fieldset>
+  {{/question}}
+  <button type="submit">Submit answer</button>
+</form>
+
+{{> footer}}

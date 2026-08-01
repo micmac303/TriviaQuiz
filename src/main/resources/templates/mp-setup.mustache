@@ -1,0 +1,49 @@
+{{> header}}
+
+<h1>Multiplayer Trivia</h1>
+
+<p>Add players (name + 6 categories each). Each turn a player answers an easy, then medium, then
+hard question from their remaining categories &mdash; one wrong answer ends the turn. First to
+clear all 6 categories wins.</p>
+
+{{#error}}
+  <p style="color: #b00;"><strong>{{error}}</strong></p>
+{{/error}}
+
+<h2>Players</h2>
+{{#players}}
+  <div>
+    <strong>{{name}}</strong> &mdash; {{#categories}}{{.}}; {{/categories}}
+    <form method="post" action="/multiplayer/remove" style="display:inline">
+      <input type="hidden" name="index" value="{{index}}">
+      <button type="submit">Remove</button>
+    </form>
+  </div>
+{{/players}}
+{{^players}}
+  <p>No players yet.</p>
+{{/players}}
+
+<h2>Add a player</h2>
+<form method="post" action="/multiplayer/add">
+  <p>
+    <label for="name">Name:</label>
+    <input type="text" id="name" name="name" required>
+  </p>
+  <p>Choose exactly 6 categories:</p>
+  {{#categories}}
+    <label>
+      <input type="checkbox" name="categories" value="{{id}}">
+      {{name}}
+    </label><br/>
+  {{/categories}}
+  <p><button type="submit">Add player</button></p>
+</form>
+
+<form method="post" action="/multiplayer/start">
+  <button type="submit"{{^canStart}} disabled{{/canStart}}>Start game</button>
+</form>
+
+<p><a href="/">Back to home</a></p>
+
+{{> footer}}

@@ -1,0 +1,23 @@
+{{> header}}
+
+<h1>{{answeredBy}}</h1>
+
+{{#correct}}
+  <p>&#10003; <strong>Correct!</strong> You answered {{yourAnswer}}.</p>
+{{/correct}}
+{{^correct}}
+  <p>&#10007; <strong>Wrong.</strong> You answered {{yourAnswer}} &mdash; correct answer: {{correctAnswer}}.</p>
+{{/correct}}
+
+<p>{{question}}</p>
+
+{{#continueTurn}}
+  <p>Keep going &mdash; next up is a <strong>{{nextDifficulty}}</strong> question.</p>
+  <p><a href="/multiplayer/play">Next question</a></p>
+{{/continueTurn}}
+{{^continueTurn}}
+  <p>Turn over. Pass the device to <strong>{{nextPlayer}}</strong>.</p>
+  <p><a href="/multiplayer/play">{{nextPlayer}}'s turn</a></p>
+{{/continueTurn}}
+
+{{> footer}}
