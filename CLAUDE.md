@@ -16,9 +16,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # Run a single test class
 ./gradlew test --tests TriviaQuizApplicationTests
-./gradlew test --tests IntegratioinTests          # note: typo in filename is intentional
+./gradlew test --tests IntegrationTests
 ./gradlew test --tests TriviaQuestionServiceIntegrationTest
 ./gradlew test --tests RepositoriesTests
+./gradlew test --tests MultiplayerGameTest
 
 # Clean
 ./gradlew clean
@@ -32,18 +33,23 @@ Spring Boot 3.5 / Kotlin app that renders a trivia quiz using server-side Mustac
 
 Both `spring-boot-starter-web` (MVC) and `spring-boot-starter-webflux` are on the classpath intentionally: MVC handles HTTP controllers, WebFlux provides the `WebClient` used to call the opentdb API.
 
+**Game modes** (both are hotseat: all state lives in the `HttpSession`, one browser):
+- **Single-player** (`GameController`, `/game`): 5 questions with optional category/difficulty filters, graded together, 2-minute timer.
+- **Multiplayer** (`MultiplayerGameController`, `/multiplayer`): players each pick 6 categories and take turns answering easy → medium → hard questions drawn from their remaining categories. A wrong answer ends the turn; the first player to clear all 6 categories wins. The turn rules live in a pure `MultiplayerGame` state machine (`game/MultiplayerModels.kt`) so they can be unit-tested without the network.
+
 **Package root:** `com.timeless.triviaquiz`
 
 | Layer | Location | Notes |
 |---|---|---|
-| Controller | `controller/HomeController.kt` | Serves `/` with Mustache template — does not yet inject `TriviaQuestionService` |
-| Service | `service/TriviaQuestionService.kt` | Calls opentdb API using a suspend function + `WebClient` |
-| Data models | `service/TriviaQuestionModel.kt` | `TriviaApiResponse` / `TriviaQuestion` — opentdb returns HTML-entity-encoded strings |
+| Controllers | `controller/` | `HomeController` (`/`), `QuestionListController` (`/questions`), `GameController` (single-player `/game`), `MultiplayerGameController` (`/multiplayer`) |
+| Service | `service/TriviaQuestionService.kt` | opentdb calls via suspend + `WebClient`. Caches the category list and buffers questions per (category, difficulty) — `getBufferedQuestion()` — to stay under opentdb's ~1 request / 5s rate limit |
+| API models | `service/TriviaQuestionModel.kt` | `TriviaApiResponse` / `TriviaQuestion` / `TriviaCategory` — opentdb returns HTML-entity-encoded strings (`decoded()` unescapes them) |
+| Game models | `game/` | `QuizQuestion` / `AnsweredQuestion` (`GameModels.kt`); `MultiplayerGame` state machine + `MpPlayer` / `MpCategory` / `TurnOutcome` (`MultiplayerModels.kt`). All `Serializable` for session storage |
 | JPA entity | `entity/Entities.kt` | `User` entity (login, firstname, lastname, description) |
 | Repository | `repository/Repositories.kt` | `UserRepository` with `findByLogin` |
 | WebClient config | `webclient/WebClientConfig.kt` | Base URL `https://opentdb.com`; `logResponse()` filter is a dev debug aid that consumes and reconstructs the response body |
 | Extensions | `extension/Extensions.kt` | `LocalDateTime.format()`, `String.toSlug()` |
-| Templates | `resources/templates/` | `header.mustache`, `home.mustache`, `footer.mustache` |
+| Templates | `resources/templates/` | `header`/`footer` partials; `home`, `game`, `result`, `questions` (single-player); `mp-setup`, `mp-play`, `mp-feedback`, `mp-winner`, `mp-message` (multiplayer) |
 
 **Database:** H2 in-memory. Hibernate `globally_quoted_identifiers` is enabled (configured in `application.properties`).
 
@@ -54,8 +60,9 @@ Both `spring-boot-starter-web` (MVC) and `spring-boot-starter-webflux` are on th
 | File | Annotation | What it tests |
 |---|---|---|
 | `TriviaQuizApplicationTests.kt` | `@SpringBootTest` | Context loads |
-| `IntegratioinTests.kt` | `@SpringBootTest(webEnvironment=RANDOM_PORT)` | Home page HTTP response via `TestRestTemplate` |
+| `IntegrationTests.kt` | `@SpringBootTest(webEnvironment=RANDOM_PORT)` | Home page HTTP response via `TestRestTemplate` |
 | `service/TriviaQuestionServiceIntegrationTest.kt` | `@SpringBootTest` | Live call to opentdb API — will fail if network is unavailable |
-| `repository/Reppositories.kt` | `@DataJpaTest` | `findByLogin` query |
+| `repository/Repositories.kt` | `@DataJpaTest` | `findByLogin` query |
+| `game/MultiplayerGameTest.kt` | plain JUnit 5 | `MultiplayerGame` turn transitions (no Spring, no network) |
 
 JUnit 5 lifecycle is set to `per_class` in `src/test/resources/junit-platform.properties`.

@@ -1,6 +1,8 @@
 package com.timeless.triviaquiz.service
 
 import com.timeless.triviaquiz.game.QuizQuestion
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
@@ -8,13 +10,62 @@ import org.springframework.web.reactive.function.client.awaitBody
 @Service
 class TriviaQuestionService(private val webClient: WebClient) {
 
-    /** Fetches the list of categories the player can choose from. */
+    companion object {
+        /** How many questions to pull per opentdb call when refilling a buffer. */
+        private const val QUESTION_BATCH = 5
+    }
+
+    // opentdb's category list is effectively static, so fetch it once and reuse it.
+    @Volatile
+    private var cachedCategories: List<TriviaCategory>? = null
+    private val categoriesMutex = Mutex()
+
+    // Small per-(category, difficulty) buffers of prepared questions. opentdb rate-limits to
+    // ~1 request / 5s per IP, so we pull questions in batches and hand them out one at a time.
+    private data class QuestionKey(val categoryId: Int, val difficulty: String)
+    private val questionBuffers = HashMap<QuestionKey, ArrayDeque<QuizQuestion>>()
+    private val questionBuffersMutex = Mutex()
+
+    /** Fetches (and then caches) the list of categories the player can choose from. */
     suspend fun getCategories(): List<TriviaCategory> {
-        return webClient.get()
-            .uri("/api_category.php")
-            .retrieve()
-            .awaitBody<TriviaCategoryResponse>()
-            .categories
+        cachedCategories?.let { return it }
+        return categoriesMutex.withLock {
+            cachedCategories ?: webClient.get()
+                .uri("/api_category.php")
+                .retrieve()
+                .awaitBody<TriviaCategoryResponse>()
+                .categories
+                .also { cachedCategories = it }
+        }
+    }
+
+    /**
+     * Returns one prepared question for the given [categoryId] and [difficulty], served from a
+     * small buffer that is refilled [QUESTION_BATCH] at a time. This cuts calls to opentdb (which
+     * rate-limits to ~1 request / 5s per IP): the first request for a combination fetches a batch,
+     * the next few are served instantly from memory. Returns null if opentdb has no questions for
+     * the combination.
+     */
+    suspend fun getBufferedQuestion(categoryId: Int, difficulty: String): QuizQuestion? {
+        val key = QuestionKey(categoryId, difficulty)
+
+        questionBuffersMutex.withLock {
+            questionBuffers[key]?.takeIf { it.isNotEmpty() }?.let { return it.removeFirst() }
+        }
+
+        // Buffer empty — refill. Fetch outside the lock so a slow call doesn't block other
+        // categories. opentdb returns nothing when it can't fill a batch (sparse combos), so
+        // fall back to a single question in that case.
+        var batch = startGame(QUESTION_BATCH, categoryId, difficulty)
+        if (batch.isEmpty()) {
+            batch = startGame(1, categoryId, difficulty)
+        }
+        if (batch.isEmpty()) return null
+
+        return questionBuffersMutex.withLock {
+            questionBuffers.getOrPut(key) { ArrayDeque() }.addAll(batch.drop(1))
+            batch.first()
+        }
     }
 
     /**

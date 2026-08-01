@@ -176,8 +176,7 @@ class MultiplayerGameController(
         repeat(game.players.size) {
             for (category in game.currentPlayer.remainingCategories().shuffled()) {
                 val question = triviaQuestionService
-                    .startGame(1, category.id, game.currentDifficulty)
-                    .firstOrNull()
+                    .getBufferedQuestion(category.id, game.currentDifficulty)
                 if (question != null) {
                     game.currentQuestion = question
                     game.currentCategoryId = category.id
