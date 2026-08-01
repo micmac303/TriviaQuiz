@@ -18,18 +18,22 @@ class GameController(
     companion object {
         const val QUESTION_COUNT = 5
         const val SESSION_KEY = "quizQuestions"
+        val ALLOWED_DIFFICULTIES = setOf("easy", "medium", "hard")
     }
 
     /** Starts a new game: fetch questions, stash them in the session, render the form. */
     @GetMapping("/game")
     suspend fun newGame(
         @RequestParam(required = false) category: String?,
+        @RequestParam(required = false) difficulty: String?,
         model: Model,
         session: HttpSession
     ): String {
         // "all" (or anything non-numeric/absent) means no category filter.
         val categoryId = category?.toIntOrNull()
-        val questions = triviaQuestionService.startGame(QUESTION_COUNT, categoryId)
+        // Only pass a recognised difficulty; "any"/absent means no filter.
+        val difficultyFilter = difficulty?.takeIf { it in ALLOWED_DIFFICULTIES }
+        val questions = triviaQuestionService.startGame(QUESTION_COUNT, categoryId, difficultyFilter)
         session.setAttribute(SESSION_KEY, questions)
         model["title"] = "Trivia Quiz"
         model["questions"] = questions

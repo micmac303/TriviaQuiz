@@ -21,9 +21,14 @@ class TriviaQuestionService(private val webClient: WebClient) {
      * Fetches [amount] questions and prepares them for a game: each question's
      * correct and incorrect answers are merged into a single shuffled list.
      * @param categoryId Optional category to restrict questions to; null means any category.
+     * @param difficulty Optional difficulty filter ("easy"/"medium"/"hard"); null means any difficulty.
      */
-    suspend fun startGame(amount: Int, categoryId: Int? = null): List<QuizQuestion> {
-        return getNewQuestions(amount, difficulty = "easy", categoryId = categoryId).mapIndexed { index, question ->
+    suspend fun startGame(
+        amount: Int,
+        categoryId: Int? = null,
+        difficulty: String? = null
+    ): List<QuizQuestion> {
+        return getNewQuestions(amount, difficulty = difficulty, categoryId = categoryId).mapIndexed { index, question ->
             val answers = (question.incorrectAnswers + question.correctAnswer).shuffled()
             QuizQuestion(
                 index = index,

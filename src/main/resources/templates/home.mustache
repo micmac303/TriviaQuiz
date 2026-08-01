@@ -3,13 +3,24 @@
 <h1>{{title}}</h1>
 
 <form method="get" action="/game">
-  <label for="category">Choose a category:</label>
-  <select id="category" name="category">
-    <option value="all">All Categories</option>
-    {{#categories}}
-      <option value="{{id}}">{{name}}</option>
-    {{/categories}}
-  </select>
+  <p>
+    <label for="category">Choose a category:</label>
+    <select id="category" name="category">
+      <option value="all">All Categories</option>
+      {{#categories}}
+        <option value="{{id}}">{{name}}</option>
+      {{/categories}}
+    </select>
+  </p>
+  <p>
+    <label for="difficulty">Choose a difficulty:</label>
+    <select id="difficulty" name="difficulty">
+      <option value="any">Any Difficulty</option>
+      <option value="easy">Easy</option>
+      <option value="medium">Medium</option>
+      <option value="hard">Hard</option>
+    </select>
+  </p>
   <button type="submit">Start quiz</button>
 </form>
 
