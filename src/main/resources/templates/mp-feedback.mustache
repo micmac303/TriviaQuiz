@@ -3,10 +3,10 @@
 <h1>{{answeredBy}}</h1>
 
 {{#correct}}
-  <p>&#10003; <strong>Correct!</strong> You answered {{yourAnswer}}.</p>
+  <p class="banner ok">&#10003; <strong>Correct!</strong> You answered {{yourAnswer}}.</p>
 {{/correct}}
 {{^correct}}
-  <p>&#10007; <strong>Wrong.</strong> You answered {{yourAnswer}} &mdash; correct answer: {{correctAnswer}}.</p>
+  <p class="banner bad">&#10007; <strong>Wrong.</strong> You answered {{yourAnswer}} &mdash; correct answer: {{correctAnswer}}.</p>
 {{/correct}}
 
 <p>{{question}}</p>

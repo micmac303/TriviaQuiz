@@ -9,10 +9,10 @@
     <li>
       <p>{{question}}</p>
       {{#correct}}
-        <p>&#10003; Correct &mdash; you answered {{yourAnswer}}</p>
+        <p class="banner ok">&#10003; Correct &mdash; you answered {{yourAnswer}}</p>
       {{/correct}}
       {{^correct}}
-        <p>&#10007; You answered {{yourAnswer}} &mdash; correct answer: {{correctAnswer}}</p>
+        <p class="banner bad">&#10007; You answered {{yourAnswer}} &mdash; correct answer: {{correctAnswer}}</p>
       {{/correct}}
     </li>
   {{/results}}

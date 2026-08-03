@@ -7,14 +7,14 @@ hard question from their remaining categories &mdash; one wrong answer ends the 
 clear all 6 categories wins.</p>
 
 {{#error}}
-  <p style="color: #b00;"><strong>{{error}}</strong></p>
+  <p class="error">{{error}}</p>
 {{/error}}
 
 <h2>Players</h2>
 {{#players}}
-  <div>
-    <strong>{{name}}</strong> &mdash; {{#categories}}{{.}}; {{/categories}}
-    <form method="post" action="/multiplayer/remove" style="display:inline">
+  <div class="player">
+    <span><strong>{{name}}</strong> <span class="player-cats">{{#categories}}{{.}}; {{/categories}}</span></span>
+    <form method="post" action="/multiplayer/remove">
       <input type="hidden" name="index" value="{{index}}">
       <button type="submit">Remove</button>
     </form>
