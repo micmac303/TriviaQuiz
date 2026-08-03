@@ -49,9 +49,12 @@ Both `spring-boot-starter-web` (MVC) and `spring-boot-starter-webflux` are on th
 | Repository | `repository/Repositories.kt` | `UserRepository` with `findByLogin` |
 | WebClient config | `webclient/WebClientConfig.kt` | Base URL `https://opentdb.com`; `logResponse()` filter is a dev debug aid that consumes and reconstructs the response body |
 | Extensions | `extension/Extensions.kt` | `LocalDateTime.format()`, `String.toSlug()` |
-| Templates | `resources/templates/` | `header`/`footer` partials; `home`, `game`, `result`, `questions` (single-player); `mp-setup`, `mp-play`, `mp-feedback`, `mp-winner`, `mp-message` (multiplayer) |
+| Templates | `resources/templates/` | `header`/`footer` partials wrap every page: `header` emits the full `<head>` (charset, viewport, stylesheet link), the branded header bar, and opens `<main class="container">`; `footer` closes it. Pages: `home`, `game`, `result`, `questions` (single-player); `mp-setup`, `mp-play`, `mp-feedback`, `mp-winner`, `mp-message` (multiplayer) |
+| Styling | `resources/static/css/styles.css` | Single stylesheet (blue/black/white theme, CSS custom properties). Served at `/css/styles.css` from Spring Boot's static resources. Templates carry a few semantic hooks: `.player`, `.error`, `.banner.ok` / `.banner.bad` |
 
 **Database:** H2 in-memory. Hibernate `globally_quoted_identifiers` is enabled (configured in `application.properties`).
+
+**Client-side JS:** Kept inline in the templates, no build step or framework. Two spots: `game.mustache`'s 2-minute countdown that auto-submits the quiz, and `mp-setup.mustache`'s "Pick 6 random categories" button that checks six category boxes at random (server still re-validates the selection).
 
 **Reactive/coroutine boundary:** The service layer uses Kotlin coroutines (`suspend` functions + `kotlinx-coroutines-reactor`). Tests for suspend functions use `runBlocking`.
 
