@@ -30,7 +30,9 @@ clear all 6 categories wins.</p>
     <label for="name">Name:</label>
     <input type="text" id="name" name="name" required>
   </p>
-  <p>Choose exactly 6 categories:</p>
+  <p>Choose exactly 6 categories:
+    <button type="button" onclick="pickRandomCategories(this.form)">Pick 6 random categories</button>
+  </p>
   {{#categories}}
     <label>
       <input type="checkbox" name="categories" value="{{id}}">
@@ -39,6 +41,21 @@ clear all 6 categories wins.</p>
   {{/categories}}
   <p><button type="submit">Add player</button></p>
 </form>
+
+<script>
+  // Clears the category checkboxes, then checks six of them chosen at random.
+  function pickRandomCategories(form) {
+    var boxes = Array.prototype.slice.call(
+      form.querySelectorAll('input[name="categories"]'));
+    boxes.forEach(function (box) { box.checked = false; });
+    // Fisher-Yates shuffle, then check the first six.
+    for (var i = boxes.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = boxes[i]; boxes[i] = boxes[j]; boxes[j] = tmp;
+    }
+    boxes.slice(0, 6).forEach(function (box) { box.checked = true; });
+  }
+</script>
 
 <form method="post" action="/multiplayer/start">
   <button type="submit"{{^canStart}} disabled{{/canStart}}>Start game</button>
