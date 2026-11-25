@@ -256,5 +256,679 @@ button.answer { border: 1px solid var(--blue); }
   color: var(--muted);
 }
 
+/* ---- Theme Party ---- */
+
+/* Scores stay in view. Capped, so a big group can't push the question off a phone's screen. */
+.scoreboard {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  max-height: 40vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 8px;
+  margin: 0 0 16px;
+}
+.scoreboard[hidden], .kick[hidden] { display: none; }
+.countdown { display: flex; align-items: center; gap: 10px; padding: 2px 6px 6px; }
+.countdown[hidden] { display: none; }
+.countdown-track {
+  position: relative;
+  flex: 1;
+  height: 16px;
+  overflow: hidden;
+  background: var(--blue-tint);
+  border-radius: 8px;
+}
+.countdown-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background: var(--blue);
+  transition: width 0.15s linear, background 0.2s ease;
+}
+.countdown-label { min-width: 2.4em; text-align: right; font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+.countdown.urgent .countdown-fill { background: var(--red); }
+.countdown.urgent .countdown-label { color: var(--red); }
+.score-rows { position: relative; transition: height 0.5s ease; }
+.score-row {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 30px; /* ROW_PX in room.js */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 6px;
+  border-radius: 6px;
+  transition: transform 0.8s ease, background 0.3s ease;
+}
+.score-row.current { background: var(--blue-tint); }
+.score-name {
+  flex: 0 0 38%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9rem;
+}
+.score-row.current .score-name { font-weight: 700; }
+.score-track { position: relative; flex: 1; height: 100%; }
+.score-bar {
+  position: absolute;
+  top: 7px;
+  bottom: 7px;
+  width: 0;
+  background: var(--blue);
+  border-radius: 0 4px 4px 0;
+  transition: left 0.8s ease, width 0.8s ease, background 0.3s ease;
+}
+.score-bar.negative { background: var(--red); border-radius: 4px 0 0 4px; }
+.score-zero {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--muted);
+  transition: left 0.8s ease;
+}
+.score-value {
+  flex: 0 0 2.2em;
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+select.rounds { display: block; width: 100%; min-width: 0; margin-top: 6px; }
+.rounds-heading { margin: 0; font-weight: 600; }
+.round-settings { display: flex; gap: 6px; }
+.round-settings label { flex: 1; min-width: 0; padding: 8px 6px; text-transform: capitalize; }
+button.kick, button.small { padding: 1px 8px; font-size: 0.8rem; }
+@media (prefers-reduced-motion: reduce) {
+  .score-rows, .score-row, .score-bar, .score-zero { transition: none; }
+}
+.question-text { font-size: 1.1rem; font-weight: 600; overflow-wrap: anywhere; }
+button.next { width: 100%; padding: 14px 16px; }
+/* The locked-in answer has to stand out from the other, disabled, buttons. */
+button.answer.picked:disabled {
+  color: #fff;
+  background: var(--navy-soft);
+  border-color: var(--navy-soft);
+}
+/* Picking a theme: as many as will fit on one screen, still big enough to tap. */
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(94px, 1fr));
+  gap: 6px;
+}
+button.theme-choice {
+  min-width: 0;
+  min-height: 44px;
+  padding: 4px;
+  font-size: 0.85rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 359px) {
+  button.theme-choice { font-size: 0.75rem; padding: 4px 2px; }
+}
+.theme-grid.few { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+/* Bad-theme flags. A theme you flagged keeps a small thumbs-down. */
+button.theme-choice.flagged::after { content: " \1F44E"; font-size: 0.85em; }
+.theme-grid.flagging button.theme-choice:not(:disabled) {
+  color: var(--red);
+  background: var(--red-tint);
+  border: 2px dashed var(--red);
+}
+button.flag-toggle {
+  display: block;
+  margin: 10px auto 0;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--border);
+}
+button.flag-toggle:hover { color: var(--red); background: var(--red-tint); border-color: var(--red); }
+button.flag-toggle.active { color: #fff; background: var(--red); border-color: var(--red); }
+/* On the host page. */
+li.theme-flagged { color: var(--red); }
+li.theme-hidden { color: var(--muted); }
+.hidden-tag[hidden], #hidden-count[hidden] { display: none; }
+.hidden-tag {
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: var(--border);
+  color: var(--navy-soft);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.flag-count {
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: var(--red-tint);
+  border: 1px solid var(--red);
+  color: var(--red);
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.theme-grid.few .theme-choice { min-height: 80px; padding: 8px; font-size: 1.1rem; }
+/* While picking, the page's own spacing and header give way to the themes. */
+body:has(.theme-grid) .site-header { display: none; }
+body:has(.theme-grid) .container { margin: 0 auto; padding: 8px 10px 16px; }
+body:has(.theme-grid) .scoreboard { margin-bottom: 6px; }
+body:has(.theme-grid) .room-status { margin: 0; font-size: 1.1rem; }
+body:has(.theme-grid) .question-meta { margin-bottom: 6px; font-size: 0.8rem; line-height: 1.3; }
+body:has(.theme-grid) .leave { margin-top: 16px; }
+.turn-total { font-weight: 700; color: var(--navy); }
+/* The lobby's scoring guide. */
+.rules {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px 16px;
+  margin: 0 0 16px;
+}
+.rules-title { margin: 0 0 8px; font-size: 1rem; color: var(--navy); }
+.rules-list { list-style: none; margin: 0; padding: 0; }
+.rules-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  padding: 6px 0;
+  border-top: 1px solid var(--border);
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+.rules-list li:first-child { border-top: none; }
+/* The lobby's theme list, where players hide themes from the game. */
+.lobby-themes {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 12px 16px;
+  margin: 0 0 16px;
+}
+.lobby-themes-title { font-weight: 700; color: var(--navy); cursor: pointer; }
+.lobby-themes[open] .lobby-themes-title { margin-bottom: 8px; }
+.lobby-theme-list { display: flex; flex-wrap: wrap; gap: 6px; }
+button.lobby-theme { padding: 6px 12px; font-size: 0.9rem; line-height: 1.2; overflow-wrap: anywhere; }
+button.lobby-theme.hidden-theme {
+  color: var(--muted);
+  background: var(--bg);
+  border-color: var(--border);
+  text-decoration: line-through;
+}
+button.lobby-theme.hidden-theme::before { content: "\1F6AB"; display: inline-block; margin-right: 4px; }
+.rules-when { font-weight: 600; color: var(--ink); }
+.rules-what { color: var(--muted); text-align: right; }
+@media (max-width: 420px) {
+  .rules-list li { flex-direction: column; gap: 0; }
+  .rules-what { text-align: left; }
+}
+.tiebreak-note { margin: 0 0 10px; font-weight: 700; color: #8a5a00; }
+.place-note { margin: 0 0 6px; font-size: 0.85rem; font-weight: 600; color: var(--blue); }
+.first-correct { font-weight: 700; color: #8a5a00; }
+.reveal-answer { font-weight: 700; color: var(--green); }
+.your-answer { font-weight: 700; color: var(--red); }
+
+/* Who got it right: readable from across the room. */
+.result-banner {
+  color: #fff;
+  border-radius: 10px;
+  padding: 18px 12px;
+  margin: 0 0 12px;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+.results {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 8px;
+  margin: 0 0 16px;
+}
+.result-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  color: #fff;
+  border-radius: 10px;
+  padding: 8px 6px;
+  text-align: center;
+  animation: result-pop 0.4s ease-out backwards;
+}
+.result-banner.right, .result-tile.right { background: var(--green); }
+.result-banner.wrong, .result-tile.wrong { background: var(--red); }
+.result-mark { font-size: 2.2rem; font-weight: 800; line-height: 1.1; }
+.result-name { max-width: 100%; font-weight: 700; overflow-wrap: anywhere; }
+.result-word { font-size: 0.85rem; font-weight: 700; }
+/* Whoever was first to get it right: a gold ring and a label on their tile. */
+.result-tile.first { box-shadow: 0 0 0 3px #f5b400, 0 4px 14px rgba(245, 180, 0, 0.45); }
+.result-first {
+  padding: 0 6px;
+  border-radius: 6px;
+  background: #f5b400;
+  color: var(--navy);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+.on-host .result-first { font-size: 0.95rem; }
+.result-streak {
+  margin-top: 3px;
+  padding: 0 6px;
+  border-radius: 6px;
+  background: #fff;
+  color: #c2410c;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+.on-host .result-streak { font-size: 0.95rem; }
+.streak-bonus { font-weight: 700; color: #c2410c; }
+
+/* The theme flash: the picked theme, big, for a moment before the question. */
+.theme-flash {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38vh;
+  padding: 24px 16px;
+  border-radius: var(--radius);
+  background: var(--navy);
+  color: #fff;
+  text-align: center;
+  animation: theme-flash-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.3);
+}
+.theme-flash-label { color: #9db4cd; font-size: 1rem; font-weight: 600; }
+.theme-flash-name { font-size: clamp(2rem, 9vw, 3.6rem); line-height: 1.1; color: #7fb0ff; overflow-wrap: anywhere; }
+@keyframes theme-flash-in {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-flash { animation: none; }
+}
+.results.on-host { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.on-host .result-mark { font-size: 4rem; }
+.on-host .result-name { font-size: 1.5rem; }
+.on-host .result-word { font-size: 1.1rem; }
+
+.score-row.right { background: var(--green-tint); }
+.score-row.wrong { background: var(--red-tint); }
+.score-result { flex: 0 0 1.2em; text-align: center; font-weight: 800; }
+.score-row.right .score-result { color: var(--green); }
+.score-row.wrong .score-result { color: var(--red); }
+
+@keyframes result-pop {
+  from { opacity: 0; transform: scale(0.6); }
+  70% { opacity: 1; transform: scale(1.06); }
+  to { opacity: 1; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .result-tile { animation: none; }
+}
+
 .host-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0; }
 .leave { margin: 28px 0 0; }
+
+/* ---- Room chat (chat.js) ---- */
+
+/* Room under the page for the floating button, so it never covers Leave or a theme. */
+body.has-chat .container { padding-bottom: 96px; }
+
+button.chat-toggle {
+  position: fixed;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 1000;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: var(--blue);
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 6px 18px rgba(13, 27, 42, 0.28);
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+button.chat-toggle:hover { color: #fff; background: var(--blue-dark); transform: translateY(-1px); }
+button.chat-toggle:focus-visible { outline: 3px solid #7fb0ff; outline-offset: 3px; }
+.chat-toggle svg { width: 26px; height: 26px; fill: currentColor; }
+.chat-toggle.nudge { animation: chat-nudge 0.5s ease; }
+.chat-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border: 2px solid #fff;
+  border-radius: 11px;
+  background: var(--red);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
+}
+.chat-badge[hidden] { display: none; }
+@keyframes chat-nudge {
+  0%, 100% { transform: scale(1); }
+  40% { transform: scale(1.15); }
+}
+
+/* Phones: the panel takes the whole visible screen, above the keyboard. */
+.chat-panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--chat-viewport-top, 0px);
+  height: var(--chat-viewport-height, 100dvh);
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+.chat-panel[hidden] { display: none; }
+body.chat-open { overflow: hidden; }
+body.chat-open .chat-toggle { display: none; }
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 8px 10px 16px;
+  padding-top: calc(10px + env(safe-area-inset-top, 0px));
+  background: var(--navy);
+  border-bottom: 3px solid var(--blue);
+  color: #fff;
+}
+.chat-title { margin: 0; font-size: 1.1rem; color: #fff; }
+button.chat-close {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+}
+button.chat-close:hover { color: #fff; background: rgba(255, 255, 255, 0.12); }
+.chat-close svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+
+.chat-scroller {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 12px 12px 4px;
+}
+.chat-empty { margin: 24px 0; text-align: center; color: var(--muted); }
+.chat-empty[hidden] { display: none; }
+.chat-messages { list-style: none; margin: 0; padding: 0; }
+
+/* .chat-messages qualifies these so they beat the site-wide `ol li` margin. */
+.chat-messages .chat-message {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin: 10px 0 0;
+}
+.chat-messages .chat-message.grouped { margin-top: 3px; }
+.chat-message.mine { align-items: flex-end; }
+.chat-author { margin: 0 0 2px 10px; font-size: 0.78rem; font-weight: 700; color: var(--muted); }
+.chat-message.host .chat-author { color: var(--navy); }
+.chat-message.host .chat-author::after {
+  content: "HOST";
+  margin-left: 6px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--navy);
+  color: #fff;
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+}
+.chat-bubble {
+  max-width: 82%;
+  padding: 7px 12px;
+  border-radius: 16px 16px 16px 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.chat-message.host .chat-bubble { border-color: var(--navy); }
+.chat-message.mine .chat-bubble {
+  border-radius: 16px 16px 4px 16px;
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+}
+.chat-time {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 0.68rem;
+  color: var(--muted);
+  white-space: nowrap;
+  vertical-align: baseline;
+}
+.chat-message.mine .chat-time { color: rgba(255, 255, 255, 0.75); }
+
+.chat-error {
+  margin: 0 12px 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--red-tint);
+  color: var(--red);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.chat-error[hidden] { display: none; }
+
+.chat-form {
+  display: flex;
+  gap: 8px;
+  padding: 8px 10px;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+input.chat-input {
+  flex: 1;
+  min-width: 0;
+  border-radius: 22px;
+  padding: 10px 16px;
+  font-size: 16px; /* Below 16px, iOS zooms the page when the field is focused. */
+}
+button.chat-send {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+.chat-send svg { width: 20px; height: 20px; fill: currentColor; margin-left: 2px; }
+
+/* Wider screens: a floating window above the button, leaving the game visible. */
+@media (min-width: 700px) {
+  button.chat-toggle { right: 24px; bottom: 24px; }
+  .chat-panel {
+    left: auto;
+    right: 24px;
+    top: auto;
+    bottom: 92px;
+    width: 370px;
+    height: min(540px, calc(100vh - 120px));
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(13, 27, 42, 0.25);
+    animation: chat-rise 0.18s ease-out;
+  }
+  body.chat-open { overflow: auto; }
+  body.chat-open .chat-toggle { display: grid; }
+  /* The tray would open under the panel, which has its own row. */
+  body.chat-open .react-toggle { display: none; }
+  .chat-header { padding-top: 10px; }
+  .chat-form { padding-bottom: 8px; }
+}
+@keyframes chat-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- Reactions (chat.js) ---- */
+
+/* The smiley button, just left of the chat button. */
+button.react-toggle {
+  position: fixed;
+  right: 84px;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  z-index: 1000;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  font-size: 1.5rem;
+  line-height: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  box-shadow: 0 4px 14px rgba(13, 27, 42, 0.2);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+button.react-toggle:hover,
+button.react-toggle.active { background: var(--blue-tint); border-color: var(--blue); transform: translateY(-1px); }
+button.react-toggle:focus-visible { outline: 3px solid #7fb0ff; outline-offset: 3px; }
+
+/* The row of emoji it opens. */
+.react-tray {
+  position: fixed;
+  right: 16px;
+  bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  z-index: 1000;
+  max-width: calc(100vw - 32px);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  box-shadow: 0 8px 28px rgba(13, 27, 42, 0.22);
+  animation: chat-rise 0.16s ease-out;
+}
+button.react-toggle[hidden], .react-tray[hidden] { display: none; }
+body.chat-open .react-toggle, body.chat-open .react-tray { display: none; }
+
+button.reaction-choice {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  font-size: 1.6rem;
+  line-height: 1;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  transition: background 0.12s ease, transform 0.12s ease;
+}
+button.reaction-choice:hover { background: var(--blue-tint); transform: scale(1.15); }
+button.reaction-choice.pop { animation: reaction-pop 0.3s ease; }
+@keyframes reaction-pop {
+  0%, 100% { transform: scale(1); }
+  45% { transform: scale(1.4); }
+}
+
+/* The same emoji inside the chat panel, above the message box. */
+.chat-reactions {
+  display: flex;
+  justify-content: space-between;
+  gap: 2px;
+  padding: 4px 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+.chat-reactions button.reaction-choice { flex: 0 0 40px; width: 40px; height: 40px; font-size: 1.4rem; }
+
+/* Reactions floating up everyone's screen. Never in the way of a tap. */
+.reaction-floats {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 70vh;
+  z-index: 999;
+  overflow: hidden;
+  pointer-events: none;
+}
+.reaction-float {
+  position: absolute;
+  bottom: -70px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  animation: reaction-rise 2.8s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+.reaction-float-emoji { font-size: 2.6rem; line-height: 1; filter: drop-shadow(0 3px 6px rgba(13, 27, 42, 0.25)); }
+.reaction-float-name {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: var(--navy);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+@keyframes reaction-rise {
+  0% { opacity: 0; transform: translate(-50%, 0) scale(0.5); }
+  12% { opacity: 1; transform: translate(-50%, -70px) scale(1.15); }
+  30% { transform: translate(-50%, -22vh) scale(1) rotate(-6deg); }
+  60% { transform: translate(-50%, -42vh) rotate(6deg); }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -62vh) rotate(0deg); }
+}
+
+/* Keeps all eight on one row on most phones. */
+@media (max-width: 420px) {
+  .react-tray button.reaction-choice { width: 38px; height: 38px; font-size: 1.45rem; }
+}
+
+@media (min-width: 700px) {
+  button.react-toggle { right: 92px; bottom: 28px; }
+  .react-tray { right: 24px; bottom: 92px; flex-wrap: nowrap; }
+  .reaction-float-emoji { font-size: 3.2rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-toggle.nudge, .chat-panel, .react-tray, button.reaction-choice.pop { animation: none; }
+}

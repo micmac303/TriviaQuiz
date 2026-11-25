@@ -1,0 +1,166 @@
+{{> header}}
+
+<h1>{{title}}</h1>
+
+<div class="join-card">
+  <p>On each phone, open a browser and go to:</p>
+  {{#joinUrls}}
+    <p class="join-url">{{.}}</p>
+  {{/joinUrls}}
+  {{^joinUrls}}
+    <p class="error">Couldn't work out this machine's network address. Check you're on Wi-Fi.</p>
+  {{/joinUrls}}
+  <p class="join-hint">Everyone must be on the same Wi-Fi. Room code <strong>{{code}}</strong>.</p>
+</div>
+
+<div id="room"></div>
+
+{{! One form on purpose: refresh, reset used and start all send the settings. autocomplete="off" stops the
+    browser restoring a checkbox state the server doesn't have. }}
+<form method="post" action="/party/host/start" autocomplete="off">
+  {{! Enter presses a form's first submit button, so that mustn't be a Remove. }}
+  <button type="submit" formaction="/party/host/refresh" style="display: none"></button>
+  <fieldset>
+    <legend>Game settings</legend>
+    <p class="rounds-heading">How many rounds of each (one turn each per round)</p>
+    <div class="round-settings">
+      {{#difficultySettings}}
+        <label>
+          {{difficulty}}
+          <select name="rounds" class="rounds"{{^inLobby}} disabled{{/inLobby}}>
+            {{#choices}}
+              <option value="{{count}}"{{#selected}} selected{{/selected}}>{{count}}</option>
+            {{/choices}}
+          </select>
+        </label>
+      {{/difficultySettings}}
+    </div>
+    <label>
+      <input type="checkbox" name="limitThemes" value="true"{{#limitThemes}} checked{{/limitThemes}}{{^inLobby}} disabled{{/inLobby}}>
+      Random themes: each turn the picker can only choose from {{themesOffered}}, or fewer when ahead: {{themesForLeader}} for first place, {{themesPerPlace}} more for each place below
+    </label>
+    <label>
+      <input type="checkbox" name="bonusNeedsSecond" value="true"{{#bonusNeedsSecond}} checked{{/bonusNeedsSecond}}{{^inLobby}} disabled{{/inLobby}}>
+      Bonus needs a second correct answer
+    </label>
+    <label>
+      <input type="checkbox" name="timeLimit" value="true"{{#timeLimit}} checked{{/timeLimit}}{{^inLobby}} disabled{{/inLobby}}>
+      Time limit: {{secondsPerPlayer}} seconds per player. Each answer takes {{secondsPerAnswer}} seconds off, down to {{secondsFloor}}
+    </label>
+    {{^inLobby}}
+      <p class="question-meta">Locked for this game. Choose &ldquo;Play again&rdquo; to change these.</p>
+    {{/inLobby}}
+  </fieldset>
+
+  <fieldset>
+    <legend>Themes</legend>
+    {{^themes}}
+      <p>No themes yet. Add JSON files to the <code>themes/</code> folder, then refresh.</p>
+    {{/themes}}
+    {{#anyFlagged}}
+      <p class="question-meta">Players flagged some themes as bad while picking. They're listed first: consider removing them.</p>
+    {{/anyFlagged}}
+    <p class="question-meta">Hide a theme to leave it out of this room's games without removing it.
+      <strong id="hidden-count"{{^anyHidden}} hidden{{/anyHidden}}>{{hiddenCount}} hidden.</strong></p>
+    <ul>
+      {{#themes}}
+        <li class="{{#flagged}}theme-flagged{{/flagged}}{{#hidden}} theme-hidden{{/hidden}}">
+          {{name}} <small>({{used}} of {{total}} used)</small>
+          <span class="hidden-tag"{{^hidden}} hidden{{/hidden}}>hidden</span>
+          {{#flagged}}<span class="flag-count">&#x1F44E; flagged {{flags}} {{#flaggedOnce}}time{{/flaggedOnce}}{{^flaggedOnce}}times{{/flaggedOnce}}</span>{{/flagged}}
+          {{! data-hide-theme: the script below sends it without reloading. The formaction is the fallback. }}
+          <button type="submit" class="secondary small" formaction="/party/host/hide-theme"
+            name="theme" value="{{id}}" data-hide-theme="{{id}}">{{#hidden}}Show{{/hidden}}{{^hidden}}Hide{{/hidden}}</button>
+          {{#onHostComputer}}
+            <button type="submit" class="secondary small" formaction="/party/host/remove-theme"
+              name="theme" value="{{id}}" data-label="{{name}}"
+              onclick="return confirm('Remove ' + this.dataset.label + '? The file moves to themes/removed.')">Remove</button>
+          {{/onHostComputer}}
+        </li>
+      {{/themes}}
+    </ul>
+    {{#themeErrors}}
+      <p class="error">
+        Skipped {{file}}: {{reason}}
+        {{#onHostComputer}}
+          <button type="submit" class="secondary small" formaction="/party/host/remove-theme"
+            name="theme" value="{{file}}" data-label="{{file}}"
+            onclick="return confirm('Remove ' + this.dataset.label + '? The file moves to themes/removed.')">Remove</button>
+        {{/onHostComputer}}
+      </p>
+    {{/themeErrors}}
+    <button type="submit" class="secondary" formaction="/party/host/refresh">Refresh themes</button>
+    {{#onHostComputer}}
+      <button type="submit" class="secondary" formaction="/party/host/reset-used"
+        onclick="return confirm('Mark every question in every theme as unused?')">Reset used questions</button>
+    {{/onHostComputer}}
+  </fieldset>
+
+  {{#inLobby}}
+    <button type="submit">Start game</button>
+  {{/inLobby}}
+</form>
+
+<div class="host-actions">
+  <form method="post" action="/party/host/reset">
+    <button type="submit" class="secondary">Play again (keep players)</button>
+  </form>
+  <form method="post" action="/party/host/close">
+    <button type="submit" class="secondary">Close room</button>
+  </form>
+</div>
+
+<p><a href="/">Back to home</a></p>
+
+<script src="/js/room.js?v=14"></script>
+<script src="/js/chat.js?v=2"></script>
+<script>
+  startRoom({ code: '{{code}}', mount: document.getElementById('room'), host: true });
+  startChat({ code: '{{code}}' });
+
+  function showHidden(button, hidden) {
+    var item = button.closest('li');
+    item.classList.toggle('theme-hidden', hidden);
+    item.querySelector('.hidden-tag').hidden = !hidden;
+    button.textContent = hidden ? 'Show' : 'Hide';
+  }
+
+  function showHiddenCount(hiddenCount) {
+    var count = document.getElementById('hidden-count');
+    count.textContent = hiddenCount + ' hidden.';
+    count.hidden = hiddenCount === 0;
+  }
+
+  // In the lobby players can hide themes from their phones; room.js passes on the room's list.
+  document.getElementById('room').addEventListener('lobbythemes', function (event) {
+    var hidden = {};
+    event.detail.forEach(function (theme) { hidden[theme.id] = theme.hidden; });
+    document.querySelectorAll('button[data-hide-theme]').forEach(function (button) {
+      var id = button.dataset.hideTheme;
+      if (id in hidden && !button.disabled) { showHidden(button, hidden[id]); }
+    });
+    showHiddenCount(event.detail.filter(function (theme) { return theme.hidden; }).length);
+  });
+
+  // Hide and Show update the list in place, so the page doesn't reload and jump to the top.
+  document.addEventListener('click', function (event) {
+    var button = event.target.closest('button[data-hide-theme]');
+    if (!button) { return; }
+    event.preventDefault();
+    if (button.disabled) { return; }
+    button.disabled = true;
+    fetch('/party/host/theme-visibility', {
+      method: 'POST',
+      body: new URLSearchParams({ theme: button.dataset.hideTheme })
+    })
+      .then(function (response) { return response.ok ? response.json() : Promise.reject(response); })
+      .then(function (result) {
+        showHidden(button, result.hidden);
+        showHiddenCount(result.hiddenCount);
+      })
+      .catch(function () { alert("Couldn't change that theme. Try again, or refresh the page."); })
+      .then(function () { button.disabled = false; });
+  });
+</script>
+
+{{> footer}}

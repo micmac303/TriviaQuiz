@@ -1,15 +1,23 @@
 package com.timeless.triviaquiz.controller
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.timeless.triviaquiz.game.DIFFICULTIES
 import com.timeless.triviaquiz.game.GameRoom
 import com.timeless.triviaquiz.game.MultiplayerGame
+import com.timeless.triviaquiz.game.PartyStage
+import com.timeless.triviaquiz.game.PartyTurn
 import com.timeless.triviaquiz.game.RoomFeedback
+import com.timeless.triviaquiz.game.RoomMode
 import com.timeless.triviaquiz.game.RoomPhase
+import com.timeless.triviaquiz.game.Theme
 import com.timeless.triviaquiz.game.TurnOutcome
 import com.timeless.triviaquiz.service.GameRoomService
 import com.timeless.triviaquiz.service.QuestionDealer
+import com.timeless.triviaquiz.service.ThemeLoader
 import jakarta.servlet.http.HttpSession
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -62,24 +70,38 @@ data class RoomStateView(
     val question: QuestionView?,
     val feedback: FeedbackView?,
     val winner: String?,
-    val notice: String?
+    val notice: String?,
+    /** Only present in Theme Party rooms; left out of the JSON entirely for classic ones. */
+    @get:JsonInclude(JsonInclude.Include.NON_NULL)
+    val party: PartyView? = null
 )
 
 data class AnswerRequest(val version: Long, val answer: String?)
 
+data class PartyPickRequest(val version: Long, val theme: String)
+
+data class PartyAnswerRequest(val version: Long, val answer: String)
+
+data class PartyNextRequest(val version: Long)
+
+data class PartyFlagRequest(val theme: String)
+
+data class PartyHideRequest(val theme: String, val hidden: Boolean)
+
 /**
- * The polling API every device in a room talks to. One endpoint to read the room and one to answer;
- * both return the same tailored view so a submitted answer updates the screen without waiting for
- * the next poll.
+ * The polling API every device in a room talks to. One endpoint to read the room and one to answer
+ * (Theme Party rooms have their own pick, answer and next endpoints); all return the same tailored view so
+ * a submitted answer updates the screen without waiting for the next poll.
  *
- * Reading the room is not purely a read: whichever device polls first once the previous answer's
+ * Reading a classic room is not purely a read: whichever device polls first once the previous answer's
  * feedback has expired is the one that goes and fetches the next question. That keeps the game
  * moving with no scheduler and no "next question" button for someone to forget to press.
  */
 @RestController
 class RoomApiController(
     private val gameRoomService: GameRoomService,
-    private val questionDealer: QuestionDealer
+    private val questionDealer: QuestionDealer,
+    private val themeLoader: ThemeLoader
 ) {
 
     @GetMapping("/api/room/{code}/state")
@@ -132,6 +154,197 @@ class RoomApiController(
         return ResponseEntity.ok(advanceAndBuild(room, viewerId))
     }
 
+    @PostMapping("/api/room/{code}/party/pick")
+    suspend fun pickTheme(
+        @PathVariable code: String,
+        @RequestBody body: PartyPickRequest,
+        session: HttpSession
+    ): ResponseEntity<RoomStateView> {
+        val room = gameRoomService.find(code) ?: return ResponseEntity.notFound().build()
+        val viewerId = viewerId(session, room)
+        // Matched against the folder listing, so the client's value is never used as a path.
+        val theme = loadThemes(room).firstOrNull { it.id == body.theme }
+
+        val accepted = room.mutex.withLock {
+            val game = room.party
+            val picked = game != null && theme != null && viewerId != null && body.version == room.version &&
+                game.pickTheme(viewerId, theme, Instant.now())
+            if (picked) {
+                room.touch()
+                room.questionsOpenedVersion = room.version
+            }
+            picked
+        }
+        return partyResponse(room, viewerId, accepted)
+    }
+
+    @PostMapping("/api/room/{code}/party/answer")
+    suspend fun answerPartyQuestion(
+        @PathVariable code: String,
+        @RequestBody body: PartyAnswerRequest,
+        session: HttpSession
+    ): ResponseEntity<RoomStateView> {
+        val room = gameRoomService.find(code) ?: return ResponseEntity.notFound().build()
+        val viewerId = viewerId(session, room)
+
+        var revealed: PartyTurn? = null
+        val accepted = room.mutex.withLock {
+            val game = room.party
+            // A range, not equality: see GameRoom.questionsOpenedVersion. A double tap is still
+            // rejected, as the game keeps only a player's first answer to each question, and a tap
+            // left over from the previous question predates the range.
+            val answered = game != null && viewerId != null &&
+                body.version in room.questionsOpenedVersion..room.version &&
+                game.answer(viewerId, body.answer, Instant.now())
+            if (answered) {
+                room.touch()
+                // Answers are only accepted before the reveal, so this one caused it.
+                if (game?.stage == PartyStage.REVEAL) revealed = game.turn
+            }
+            answered
+        }
+        revealed?.let { markQuestionUsed(room, it, themeLoader) }
+        return partyResponse(room, viewerId, accepted)
+    }
+
+    /** Moves everyone on from a reveal. The exact version match makes the first tap the only one. */
+    @PostMapping("/api/room/{code}/party/next")
+    suspend fun nextPartyTurn(
+        @PathVariable code: String,
+        @RequestBody body: PartyNextRequest,
+        session: HttpSession
+    ): ResponseEntity<RoomStateView> {
+        val room = gameRoomService.find(code) ?: return ResponseEntity.notFound().build()
+        val viewerId = viewerId(session, room)
+
+        val accepted = room.mutex.withLock {
+            val game = room.party
+            val moved = game != null && viewerId != null && body.version == room.version && game.next(viewerId)
+            if (moved) room.touch()
+            moved
+        }
+        return partyResponse(room, viewerId, accepted)
+    }
+
+    /**
+     * Marks a theme as bad, adding to the count the host sees. Only the picker, only for a theme on
+     * offer to them, and once per player per theme. Doesn't bump the version: nothing anyone else
+     * sees changes, and the picker's exact-match pick mustn't be made stale by it.
+     */
+    @PostMapping("/api/room/{code}/party/flag")
+    suspend fun flagTheme(
+        @PathVariable code: String,
+        @RequestBody body: PartyFlagRequest,
+        session: HttpSession
+    ): ResponseEntity<RoomStateView> {
+        val room = gameRoomService.find(code) ?: return ResponseEntity.notFound().build()
+        val viewerId = viewerId(session, room)
+        // Matched against the folder listing, so the client's value is never used as a path.
+        val themes = loadThemes(room)
+        val theme = themes.firstOrNull { it.id == body.theme }
+
+        val accepted = room.mutex.withLock {
+            val game = room.party
+            game != null && theme != null && viewerId != null && game.canPick(viewerId) &&
+                game.themeChoices(themes).any { it.id == theme.id } &&
+                room.flagTheme(viewerId, theme.id)
+        }
+        if (accepted) withContext(Dispatchers.IO) { themeLoader.flag(theme!!.id) }
+        return partyResponse(room, viewerId, accepted)
+    }
+
+    /**
+     * Lets a player waiting in the lobby hide a theme from this room's game, or show it again: the
+     * same list the host's Hide and Show change. Only before the start. [PartyHideRequest.hidden]
+     * is the state wanted rather than a toggle, so two players hiding the same theme agree. No
+     * version bump, as nothing else in the lobby changes.
+     */
+    @PostMapping("/api/room/{code}/party/hide")
+    suspend fun hideTheme(
+        @PathVariable code: String,
+        @RequestBody body: PartyHideRequest,
+        session: HttpSession
+    ): ResponseEntity<RoomStateView> {
+        val room = gameRoomService.find(code) ?: return ResponseEntity.notFound().build()
+        val viewerId = viewerId(session, room)
+        // Matched against the folder listing, hidden ones included, so they can be shown again.
+        val known = withContext(Dispatchers.IO) { themeLoader.load().themes }.any { it.id == body.theme }
+
+        val accepted = room.mutex.withLock {
+            val allowed = known && room.party == null && room.phase == RoomPhase.LOBBY &&
+                room.lobby.any { it.playerId == viewerId }
+            if (allowed) {
+                if (body.hidden) room.hiddenThemes.add(body.theme) else room.hiddenThemes.remove(body.theme)
+                room.keepAlive()
+            }
+            allowed
+        }
+        return partyResponse(room, viewerId, accepted)
+    }
+
+    private suspend fun partyResponse(
+        room: GameRoom,
+        viewerId: String?,
+        accepted: Boolean
+    ): ResponseEntity<RoomStateView> {
+        val status = if (accepted) HttpStatus.OK else HttpStatus.CONFLICT
+        return ResponseEntity.status(status).body(advanceAndBuild(room, viewerId))
+    }
+
+    /**
+     * Builds a party room's state. The time limit has no scheduler: the first poll after the clock
+     * runs out causes the reveal. Polling never moves a game on from a reveal. The used flag and
+     * the picker's theme list are both file work, so done outside the mutex.
+     *
+     * Likewise a tiebreak question has no scheduler: the first request that finds the game waiting
+     * for one deals it. That is usually the response to the Next that caused the wait.
+     */
+    private suspend fun readPartyState(room: GameRoom, viewerId: String?): RoomStateView {
+        // The lobby lists every theme, hidden ones too, so players can hide or show them.
+        if (room.party == null) {
+            val all = withContext(Dispatchers.IO) { themeLoader.load().themes }
+            room.mutex.withLock {
+                // Checked again: the host may have started while the themes loaded, and a started
+                // game must only be given the themes that aren't hidden.
+                if (room.party == null) {
+                    room.keepAlive()
+                    return buildPartyState(room, viewerId, all)
+                }
+            }
+        }
+        var timedOut: PartyTurn? = null
+        room.mutex.withLock {
+            room.keepAlive()
+            val game = room.party
+            if (game?.expire(Instant.now()) == true) {
+                room.touch()
+                timedOut = game.turn
+            } else if (game?.canPick(viewerId) != true && game?.stage != PartyStage.TIEBREAK) {
+                return buildPartyState(room, viewerId, emptyList())
+            }
+        }
+        timedOut?.let { markQuestionUsed(room, it, themeLoader) }
+        val themes = loadThemes(room)
+        return room.mutex.withLock {
+            // Checked again: another request may have dealt it while the themes loaded.
+            if (room.party?.dealTiebreak(themes, Instant.now()) == true) {
+                room.touch()
+                room.questionsOpenedVersion = room.version
+            }
+            buildPartyState(room, viewerId, themes)
+        }
+    }
+
+    private fun buildPartyState(room: GameRoom, viewerId: String?, themes: List<Theme>): RoomStateView =
+        buildView(room, viewerId).copy(party = buildPartyView(room, viewerId, themes, Instant.now()))
+
+    /**
+     * The themes this room may use: all valid ones but those the host has hidden. Hiding one that's
+     * on offer swaps it out of the picker's deal, like a removed theme.
+     */
+    private suspend fun loadThemes(room: GameRoom): List<Theme> =
+        withContext(Dispatchers.IO) { themeLoader.load().themes }.filter { it.id !in room.hiddenThemes }
+
     /**
      * Expires stale feedback, deals the next question if one is needed, then builds the view.
      *
@@ -141,6 +354,8 @@ class RoomApiController(
      * [GameRoom.nextDealAttempt] so a struggling opentdb isn't retried once per second per device.
      */
     private suspend fun advanceAndBuild(room: GameRoom, viewerId: String?): RoomStateView {
+        if (room.mode == RoomMode.THEME_PARTY) return readPartyState(room, viewerId)
+
         val game: MultiplayerGame
 
         room.mutex.withLock {

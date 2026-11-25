@@ -8,13 +8,12 @@ import com.timeless.triviaquiz.service.GameRoomService
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpSession
 import kotlinx.coroutines.sync.withLock
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.ui.set
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
-import java.net.Inet4Address
-import java.net.NetworkInterface
 
 /**
  * The host screen, opened on the machine running the server. It creates a room, shows the join
@@ -23,7 +22,10 @@ import java.net.NetworkInterface
  * but no answer buttons.
  */
 @Controller
-class HostController(private val gameRoomService: GameRoomService) {
+class HostController(
+    private val gameRoomService: GameRoomService,
+    @Value("\${trivia.public-url:}") private val publicUrl: String
+) {
 
     /** Shows the host screen, creating a room the first time this browser asks for one. */
     @GetMapping("/host")
@@ -34,7 +36,7 @@ class HostController(private val gameRoomService: GameRoomService) {
 
         model["title"] = "Host a game"
         model["code"] = room.code
-        model["joinUrls"] = joinUrls(request, room.code)
+        model["joinUrls"] = joinUrls(request, room.code, publicUrl)
         model["minPlayers"] = GameRoomService.MIN_PLAYERS
         return "host"
     }
@@ -83,28 +85,4 @@ class HostController(private val gameRoomService: GameRoomService) {
 
     private fun hostedRoom(session: HttpSession): GameRoom? =
         gameRoomService.find(session.getAttribute(RoomSession.HOSTED_ROOM_CODE) as? String)
-
-    /**
-     * The addresses players should type in. The host loads this page from the same server, so the
-     * port on the incoming request is the right one; only the host part needs replacing, because
-     * "localhost" means the phone itself. A laptop on Wi-Fi usually has one site-local IPv4, but
-     * VPNs and Docker bridges can add more, so all candidates are listed rather than guessed at.
-     */
-    private fun joinUrls(request: HttpServletRequest, code: String): List<String> {
-        val port = request.serverPort
-        return lanAddresses().map { "http://$it:$port/j/$code" }
-    }
-
-    private fun lanAddresses(): List<String> =
-        runCatching {
-            NetworkInterface.getNetworkInterfaces()
-                .asSequence()
-                .filter { it.isUp && !it.isLoopback && !it.isVirtual }
-                .flatMap { it.inetAddresses.asSequence() }
-                .filterIsInstance<Inet4Address>()
-                .filter { it.isSiteLocalAddress }
-                .mapNotNull { it.hostAddress }
-                .distinct()
-                .toList()
-        }.getOrDefault(emptyList())
 }

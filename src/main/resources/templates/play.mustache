@@ -6,13 +6,15 @@
   <p class="room-status">Connecting...</p>
 </div>
 
-<form method="post" action="/play/leave" class="leave">
+<form method="post" action="/play/leave" class="leave"{{#party}} onsubmit="return confirm('Leave the game? You can\'t rejoin until the next one.')"{{/party}}>
   <button type="submit" class="secondary">Leave game</button>
 </form>
 
-<script src="/js/room.js"></script>
+<script src="/js/room.js?v=14"></script>
+<script src="/js/chat.js?v=2"></script>
 <script>
   startRoom({ code: '{{code}}', mount: document.getElementById('room') });
+  startChat({ code: '{{code}}' });
 </script>
 
 {{> footer}}

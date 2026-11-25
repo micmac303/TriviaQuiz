@@ -30,9 +30,11 @@
 
 <p><a href="/">Back to home</a></p>
 
-<script src="/js/room.js"></script>
+<script src="/js/room.js?v=14"></script>
+<script src="/js/chat.js?v=2"></script>
 <script>
   startRoom({ code: '{{code}}', mount: document.getElementById('room') });
+  startChat({ code: '{{code}}' });
 </script>
 
 {{> footer}}

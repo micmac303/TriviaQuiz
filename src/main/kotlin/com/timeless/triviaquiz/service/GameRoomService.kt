@@ -1,6 +1,7 @@
 package com.timeless.triviaquiz.service
 
 import com.timeless.triviaquiz.game.GameRoom
+import com.timeless.triviaquiz.game.RoomMode
 import org.springframework.stereotype.Service
 import java.security.SecureRandom
 import java.time.Duration
@@ -36,11 +37,11 @@ class GameRoomService {
     private val random = SecureRandom()
 
     /** Creates a room with an unused join code. */
-    fun create(): GameRoom {
+    fun create(mode: RoomMode = RoomMode.CLASSIC): GameRoom {
         reapIdle()
         while (true) {
             val code = randomCode()
-            val room = GameRoom(code)
+            val room = GameRoom(code, mode)
             if (rooms.putIfAbsent(code, room) == null) return room
         }
     }

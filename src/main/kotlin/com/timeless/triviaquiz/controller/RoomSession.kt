@@ -16,4 +16,7 @@ object RoomSession {
 
     /** The join code of the room this browser is hosting (set on the host's own machine). */
     const val HOSTED_ROOM_CODE = "hostedRoomCode"
+
+    /** The join code of the Theme Party room this browser is hosting. */
+    const val HOSTED_PARTY_CODE = "hostedPartyCode"
 }

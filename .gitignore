@@ -43,3 +43,6 @@ replay_pid*
 /build/jacoco/
 
 
+
+# Theme files hold the answers
+themes/**/*.json

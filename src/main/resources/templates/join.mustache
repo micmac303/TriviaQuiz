@@ -13,7 +13,7 @@ First to clear all {{required}} wins.</p>
 <form method="post" action="/j/{{code}}">
   <p>
     <label for="name">Your name:</label>
-    <input type="text" id="name" name="name" value="{{name}}" required>
+    <input type="text" id="name" name="name" value="{{name}}" maxlength="{{maxNameLength}}" required>
   </p>
   <p>Choose exactly {{required}} categories:
     <button type="button" onclick="pickRandomCategories(this.form, {{required}})">Pick {{required}} at random</button>
