@@ -52,11 +52,8 @@ class ThemePartyGameTest {
     }
 
     @Test
-    fun `by default there are six rounds and none are easy`() {
-        val rounds = roundDifficulties(DEFAULT_ROUND_COUNTS)
-
-        assertEquals(6, rounds.size)
-        assertFalse("easy" in rounds)
+    fun `by default there is one round of each difficulty, easiest first`() {
+        assertEquals(listOf("easy", "medium", "hard"), roundDifficulties(DEFAULT_ROUND_COUNTS))
     }
 
     @Test

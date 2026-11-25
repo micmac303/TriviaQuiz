@@ -102,7 +102,7 @@ For your own themes:
    at least 2 players, and nobody can join after the start.
 3. Choose how many rounds of each difficulty (0 to 20) and whether to tick **Random themes**,
    **Bonus needs a second correct answer** and **Time limit**, then click **Start game**. They are locked until the next game.
-4. The default is 6 rounds: no easy, 3 medium, then 3 hard. Rounds always go from easiest to
+4. The default is 3 rounds: 1 easy, 1 medium, then 1 hard. With 10 players that is about 15 minutes. Rounds always go from easiest to
    hardest. In each round every player takes one turn.
 5. On your turn you pick a theme (with **Random themes** on, from 8 random ones), and everyone answers one question from it. An answer can't be changed.
    With **Time limit** on, the clock starts at 4 seconds per player and each answer takes 2 seconds

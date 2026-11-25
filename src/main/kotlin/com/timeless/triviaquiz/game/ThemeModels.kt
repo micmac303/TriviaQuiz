@@ -6,8 +6,6 @@ package com.timeless.triviaquiz.game
  */
 val THEME_QUESTION_SPLIT: Map<String, Int> = linkedMapOf("easy" to 2, "medium" to 2, "hard" to 2)
 
-const val DEFAULT_ROUNDS = 6
-
 /** With the theme limit on, the most themes a picker is offered: what everyone gets when level. */
 const val THEMES_OFFERED = 8
 
@@ -15,11 +13,11 @@ const val THEMES_OFFERED = 8
 const val THEMES_FOR_LEADER = 4
 const val THEMES_PER_PLACE = 2
 
-/** How many rounds of each difficulty a game has unless the host changes it. None are easy. */
-val DEFAULT_ROUND_COUNTS: Map<String, Int> = run {
-    val played = THEME_QUESTION_SPLIT.keys - "easy"
-    THEME_QUESTION_SPLIT.mapValues { (difficulty, _) -> if (difficulty in played) DEFAULT_ROUNDS / played.size else 0 }
-}
+/**
+ * How many rounds of each difficulty a game has unless the host changes it: one of each. With ten
+ * players a round is ten turns, so three rounds keeps a game to about 15 minutes.
+ */
+val DEFAULT_ROUND_COUNTS: Map<String, Int> = THEME_QUESTION_SPLIT.mapValues { 1 }
 
 /** What the host can choose from for each difficulty. */
 val ROUND_OPTIONS: IntRange = 0..20

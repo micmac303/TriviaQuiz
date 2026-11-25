@@ -138,7 +138,7 @@ class PartyFlowIntegrationTest {
 
         val answering = room.party(bob)
         val question = answering.path("question").path("question").asText()
-        assertTrue(question.startsWith("medium"), "no easy by default")
+        assertTrue(question.startsWith("easy"), "easy first by default")
         assertTrue(answering.path("reveal").isNull)
         assertFalse("correctAnswer" in answering.toString() || "Because." in answering.toString())
 
@@ -192,20 +192,20 @@ class PartyFlowIntegrationTest {
     }
 
     @Test
-    fun `a game runs six turns each`() {
+    fun `a game runs three turns each`() {
         val room = Party(2)
 
-        repeat(12) { turn ->
+        repeat(6) { turn ->
             assertEquals(200, room.pick(room.players[turn % 2]), "turn $turn")
             room.players.forEach { assertEquals(200, room.answer(it)) }
             assertEquals(200, room.next(room.players[0]))
         }
 
         assertEquals("finished", room.party().path("stage").asText())
-        // Both right every time: six picks of two less one, and six guesses of one. P0 always
-        // answers first, so also gets the first-correct point all twelve turns. And twelve in a
-        // row is a streak point each from the 3rd on: ten each.
-        assertEquals(listOf(12 + 12 + 10, 12 + 10), room.party().path("players").map { it.path("score").asInt() })
+        // Both right every time: three picks of two less one, and three guesses of one. P0 always
+        // answers first, so also gets the first-correct point all six turns. And six in a row is
+        // a streak point each from the 3rd on: four each.
+        assertEquals(listOf(6 + 6 + 4, 6 + 4), room.party().path("players").map { it.path("score").asInt() })
     }
 
     @Test
@@ -213,7 +213,7 @@ class PartyFlowIntegrationTest {
         val room = Party(2, start = false)
         fun selected() = Regex("<option value=\"(\\d+)\" selected")
             .findAll(room.host.get("/party/host").body()).map { it.groupValues[1].toInt() }.toList()
-        assertEquals(6, selected().sum())
+        assertEquals(listOf(1, 1, 1), selected())
 
         room.host.form("/party/host/refresh", "rounds=999&rounds=-4&rounds=5")
         assertEquals(listOf(20, 0, 5), selected(), "kept in range")
