@@ -5,7 +5,7 @@
 <div class="join-card">
   <p>On each phone, open a browser and go to:</p>
   {{#joinUrls}}
-    <p class="join-url">{{.}}</p>
+    <p class="join-url"><span class="join-url-text">{{.}}</span><button type="button" class="copy-link" data-copy="{{.}}" aria-label="Copy {{.}}">Copy</button></p>
   {{/joinUrls}}
   {{^joinUrls}}
     <p class="error">Couldn't work out this machine's network address. Check you're on Wi-Fi.</p>
@@ -108,7 +108,8 @@
 
 <p><a href="/">Back to home</a></p>
 
-<script src="/js/room.js?v=14"></script>
+<script src="/js/room.js?v=15"></script>
+<script src="/js/copy-link.js?v=1"></script>
 <script src="/js/chat.js?v=2"></script>
 <script>
   startRoom({ code: '{{code}}', mount: document.getElementById('room'), host: true });

@@ -219,12 +219,30 @@ ol li, ul li { margin: 0.4em 0; }
 .join-card p { margin: 0 0 8px; }
 .join-card .error { margin: 8px 0 0; }
 .join-url {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
   font-size: 1.5rem;
   font-weight: 700;
   color: #7fb0ff;
-  word-break: break-all;
   font-variant-numeric: tabular-nums;
 }
+.join-url-text { min-width: 0; word-break: break-all; }
+.join-card .copy-link {
+  flex: none;
+  margin: 0;
+  padding: 6px 14px;
+  border: 1px solid #7fb0ff;
+  border-radius: 8px;
+  background: transparent;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.join-card .copy-link:hover { background: rgba(127, 176, 255, 0.15); }
+.join-card .copy-link.copied { background: var(--green); border-color: var(--green); }
 .join-hint { color: #9db4cd; font-size: 0.92rem; }
 
 /* Status headline drawn by room.js ("Your turn", "Dave's turn", ...). */
