@@ -14,12 +14,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Run all tests
 ./gradlew test
 
-# Run a single test class
-./gradlew test --tests TriviaQuizApplicationTests
-./gradlew test --tests IntegrationTests
-./gradlew test --tests TriviaQuestionServiceIntegrationTest
-./gradlew test --tests RepositoriesTests
+# Run a single test class (class names are listed under Tests below)
 ./gradlew test --tests MultiplayerGameTest
+
+# Run a single test method (wildcards avoid quoting backtick-named Kotlin tests)
+./gradlew test --tests 'MultiplayerGameTest.*wrong answer*'
+
+# Run only the tests that don't need the network
+./gradlew test --tests MultiplayerGameTest --tests GameRoomTest --tests RoomLobbyIntegrationTest --tests RepositoriesTests
 
 # Clean
 ./gradlew clean
@@ -44,7 +46,7 @@ Spring Boot 3.5 / Kotlin app that renders a trivia quiz using server-side Mustac
 Both `spring-boot-starter-web` (MVC) and `spring-boot-starter-webflux` are on the classpath intentionally: MVC handles HTTP controllers, WebFlux provides the `WebClient` used to call the opentdb API.
 
 **Game modes:**
-- **Single-player** (`GameController`, `/game`): 5 questions with optional category/difficulty filters, graded together, 2-minute timer. Hotseat — state in the `HttpSession`.
+- **Single-player** (`GameController`, `/game`): 5 questions with optional category/difficulty filters, graded together, 2-minute timer. State lives in the `HttpSession`.
 - **Hotseat multiplayer** (`MultiplayerGameController`, `/multiplayer`): players each pick 6 categories and take turns answering easy → medium → hard questions drawn from their remaining categories. A wrong answer ends the turn; the first player to clear all 6 categories wins. All state in one browser's `HttpSession`. The turn rules live in a pure `MultiplayerGame` state machine (`game/MultiplayerModels.kt`) so they can be unit-tested without the network.
 - **Networked multiplayer** (`HostController` `/host`, `JoinController` `/j/{code}` + `/play`, `RoomApiController` `/api/room/...`): the same rules, but everyone plays on their own phone over the LAN. Run the app on a laptop, open `/host` there for the join address and room code, and players browse to it — no app to install.
 
