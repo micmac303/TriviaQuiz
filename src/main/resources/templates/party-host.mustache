@@ -40,10 +40,6 @@
       Random themes: each turn the picker can only choose from {{themesOffered}}, or fewer when ahead: {{themesForLeader}} for first place, {{themesPerPlace}} more for each place below
     </label>
     <label>
-      <input type="checkbox" name="bonusNeedsSecond" value="true"{{#bonusNeedsSecond}} checked{{/bonusNeedsSecond}}{{^inLobby}} disabled{{/inLobby}}>
-      Bonus needs a second correct answer
-    </label>
-    <label>
       <input type="checkbox" name="timeLimit" value="true"{{#timeLimit}} checked{{/timeLimit}}{{^inLobby}} disabled{{/inLobby}}>
       Time limit: {{secondsPerPlayer}} seconds per player. Each answer takes {{secondsPerAnswer}} seconds off, down to {{secondsFloor}}
     </label>

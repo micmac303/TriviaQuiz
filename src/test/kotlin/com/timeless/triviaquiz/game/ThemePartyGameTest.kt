@@ -24,7 +24,7 @@ class ThemePartyGameTest {
 
     private fun game(vararg ids: String = arrayOf("a", "b", "c")) =
         // Two of each, so every difficulty is played.
-        ThemePartyGame(ids.map { PartyPlayer(it, it.uppercase()) }, false, roundCounts = THEME_QUESTION_SPLIT)
+        ThemePartyGame(ids.map { PartyPlayer(it, it.uppercase()) }, roundCounts = THEME_QUESTION_SPLIT)
 
     /** Picks, and has everyone answer, with only [correct] getting it right. */
     private fun ThemePartyGame.playToReveal(vararg correct: String, theme: Theme = theme()) {
@@ -61,7 +61,7 @@ class ThemePartyGameTest {
         val order = THEME_QUESTION_SPLIT.keys.toList()
         for (counts in listOf(listOf(0, 0, 1), listOf(0, 4, 1), listOf(5, 0, 2), listOf(20, 0, 0))) {
             val game = ThemePartyGame(
-                listOf("a", "b").map { PartyPlayer(it, it) }, false, roundCounts = order.zip(counts).toMap()
+                listOf("a", "b").map { PartyPlayer(it, it) }, roundCounts = order.zip(counts).toMap()
             )
             val played = mutableListOf<String>()
 
@@ -88,7 +88,7 @@ class ThemePartyGameTest {
     private fun manyThemes(count: Int = 10) = (1..count).map { theme().copy(id = "t$it.json") }
 
     private fun limitedGame() = ThemePartyGame(
-        listOf("a", "b").map { PartyPlayer(it, it) }, false, roundCounts = THEME_QUESTION_SPLIT, limitThemes = true
+        listOf("a", "b").map { PartyPlayer(it, it) }, roundCounts = THEME_QUESTION_SPLIT, limitThemes = true
     )
 
     @Test
@@ -147,7 +147,7 @@ class ThemePartyGameTest {
     @Test
     fun `the further ahead the picker, the fewer themes they get`() {
         val game = ThemePartyGame(
-            listOf("a", "b", "c", "d").map { PartyPlayer(it, it) }, false,
+            listOf("a", "b", "c", "d").map { PartyPlayer(it, it) },
             roundCounts = THEME_QUESTION_SPLIT, limitThemes = true
         )
         val themes = manyThemes()
@@ -177,7 +177,7 @@ class ThemePartyGameTest {
     fun `next waits until the answer has been up for the hold`() {
         val start = Instant.parse("2026-01-01T12:00:00Z")
         val game = ThemePartyGame(
-            listOf("a", "b").map { PartyPlayer(it, it) }, false, revealHold = Duration.ofMillis(1500)
+            listOf("a", "b").map { PartyPlayer(it, it) }, revealHold = Duration.ofMillis(1500)
         )
         game.pickTheme("a", theme(), start)
         game.answer("a", "right", start)
@@ -299,7 +299,7 @@ class ThemePartyGameTest {
     fun `during the theme flash answers are refused, and the clock starts after it`() {
         val start = Instant.parse("2026-01-01T12:00:00Z")
         val game = ThemePartyGame(
-            listOf("a", "b").map { PartyPlayer(it, it) }, false, timeLimit = true, themeFlash = Duration.ofSeconds(1)
+            listOf("a", "b").map { PartyPlayer(it, it) }, timeLimit = true, themeFlash = Duration.ofSeconds(1)
         )
         game.pickTheme("a", theme(), start)
 
@@ -310,7 +310,7 @@ class ThemePartyGameTest {
 
     /** One round of hard questions, with tiebreaks on. */
     private fun tiebreakGame(vararg ids: String) = ThemePartyGame(
-        ids.map { PartyPlayer(it, it) }, false,
+        ids.map { PartyPlayer(it, it) },
         roundCounts = mapOf("easy" to 0, "medium" to 0, "hard" to 1), tiebreak = true
     )
 
@@ -408,18 +408,6 @@ class ThemePartyGameTest {
 
         assertNull(game.turn?.firstCorrectId)
         assertEquals(listOf(0, 0, 0), game.players.map { game.scoreOf(it.playerId) })
-    }
-
-    @Test
-    fun `a guesser still scores when the picker's bonus doesn't`() {
-        val game = ThemePartyGame(listOf("a", "b").map { PartyPlayer(it, it) }, bonusNeedsSecond = true)
-
-        game.playToReveal("a")
-        game.next("a")
-        game.playToReveal("a")
-
-        // A guess of 1, plus the first-correct point both times.
-        assertEquals(1 + 2 * FIRST_CORRECT_POINTS, game.scoreOf("a"))
     }
 
     @Test
@@ -559,7 +547,7 @@ class ThemePartyGameTest {
     private fun after(seconds: Long): Instant = opened.plusSeconds(seconds)
 
     private fun timedQuestion(vararg ids: String) =
-        ThemePartyGame(ids.map { PartyPlayer(it, it) }, bonusNeedsSecond = false, timeLimit = true)
+        ThemePartyGame(ids.map { PartyPlayer(it, it) }, timeLimit = true)
             .also { it.pickTheme(ids.first(), theme(), opened) }
 
     private fun ThemePartyGame.secondsLeft(at: Instant) = Duration.between(at, turn!!.deadline).seconds

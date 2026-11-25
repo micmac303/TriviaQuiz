@@ -363,8 +363,8 @@ class PartyFlowIntegrationTest {
         val model = ExtendedModelMap()
         hostController.host(model, session, phone)
         runBlocking {
-            hostController.resetUsed(false, false, false, null, session, phone)
-            hostController.removeTheme("test.json", false, false, false, null, session, phone)
+            hostController.resetUsed(false, false, null, session, phone)
+            hostController.removeTheme("test.json", false, false, null, session, phone)
         }
 
         assertEquals(false, model["onHostComputer"])

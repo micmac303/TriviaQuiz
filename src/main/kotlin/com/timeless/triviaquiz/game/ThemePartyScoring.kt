@@ -36,14 +36,11 @@ data class QuestionScore(
  *
  * @param playerCount how many are playing at the reveal, picker included. It is the bonus.
  * @param othersCorrect how many players other than the picker answered correctly.
- * @param bonusNeedsSecond when set, the bonus only counts if at least one other player was right.
  */
-fun scoreQuestion(pickerCorrect: Boolean, othersCorrect: Int, playerCount: Int, bonusNeedsSecond: Boolean): QuestionScore {
-    val bonusAllowed = !bonusNeedsSecond || othersCorrect > 0
-    return QuestionScore(
+fun scoreQuestion(pickerCorrect: Boolean, othersCorrect: Int, playerCount: Int): QuestionScore =
+    QuestionScore(
         pickerCorrect = pickerCorrect,
         othersCorrect = othersCorrect,
-        bonus = if (pickerCorrect && bonusAllowed) playerCount else 0,
+        bonus = if (pickerCorrect) playerCount else 0,
         penalty = othersCorrect * PENALTY_PER_OTHER_CORRECT
     )
-}

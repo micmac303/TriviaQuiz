@@ -83,8 +83,8 @@ data class PartyRevealView(
 
 /**
  * How scoring works, for the lobby screen. Sent rather than written into room.js so it can't drift
- * from the real numbers. [limitThemes] and [bonusNeedsSecond] are the host's current choices, which
- * can change until the game starts.
+ * from the real numbers. [limitThemes] is the host's current choice, which can change until the
+ * game starts.
  */
 data class PartyRulesView(
     val guesserPoints: Int = GUESSER_POINTS,
@@ -96,8 +96,7 @@ data class PartyRulesView(
     val themesForLeader: Int = THEMES_FOR_LEADER,
     val themesPerPlace: Int = THEMES_PER_PLACE,
     val themesOffered: Int = THEMES_OFFERED,
-    val limitThemes: Boolean,
-    val bonusNeedsSecond: Boolean
+    val limitThemes: Boolean
 )
 
 /** The Theme Party part of [RoomStateView], tailored to who is asking. */
@@ -111,7 +110,6 @@ data class PartyView(
     val picker: String?,
     val nextPicker: String?,
     val yourPick: Boolean,
-    val bonusNeedsSecond: Boolean?,
     val timeLimit: Boolean?,
     /** Time left rather than a deadline, as phones' clocks can't be trusted to match the laptop's. */
     val millisLeft: Long?,
@@ -172,8 +170,7 @@ internal fun buildPartyView(room: GameRoom, viewerId: String?, themes: List<Them
             picker = null,
             nextPicker = null,
             yourPick = false,
-            bonusNeedsSecond = null, // Neither setting is final until the host presses start.
-            timeLimit = null,
+            timeLimit = null, // Not final until the host presses start.
             millisLeft = null,
             millisAllowed = null,
             millisUntilQuestion = null,
@@ -184,7 +181,7 @@ internal fun buildPartyView(room: GameRoom, viewerId: String?, themes: List<Them
             question = null,
             reveal = null,
             winners = emptyList(),
-            rules = PartyRulesView(limitThemes = room.limitThemes, bonusNeedsSecond = room.bonusNeedsSecond),
+            rules = PartyRulesView(limitThemes = room.limitThemes),
             lobbyThemes = themes
                 .map { LobbyThemeView(it.id, it.name, it.id in room.hiddenThemes) }
                 .sortedBy { it.name.lowercase() }
@@ -227,7 +224,6 @@ internal fun buildPartyView(room: GameRoom, viewerId: String?, themes: List<Them
         picker = picker?.name,
         nextPicker = game.nextPicker?.name,
         yourPick = viewerId != null && viewerId == picker?.playerId,
-        bonusNeedsSecond = game.bonusNeedsSecond,
         timeLimit = game.timeLimit,
         millisLeft = game.turn?.deadline?.let { Duration.between(now, it).toMillis().coerceAtLeast(0) },
         millisAllowed = game.turn?.timeAllowed?.toMillis(),

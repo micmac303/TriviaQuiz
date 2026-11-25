@@ -90,7 +90,6 @@ class PartyHostController(
         model["code"] = room.code
         model["joinUrls"] = joinUrls(request, room.code, publicUrl)
         model["inLobby"] = room.phase == RoomPhase.LOBBY
-        model["bonusNeedsSecond"] = room.bonusNeedsSecond
         model["timeLimit"] = room.timeLimit
         model["limitThemes"] = room.limitThemes
         model["themesOffered"] = THEMES_OFFERED
@@ -116,7 +115,6 @@ class PartyHostController(
     /** Reloads the theme list. The folder is read when the page we redirect to renders. */
     @PostMapping("/party/host/refresh")
     suspend fun refresh(
-        @RequestParam(defaultValue = "false") bonusNeedsSecond: Boolean,
         @RequestParam(defaultValue = "false") timeLimit: Boolean,
         @RequestParam(defaultValue = "false") limitThemes: Boolean,
         @RequestParam(required = false) rounds: List<Int>?,
@@ -124,7 +122,7 @@ class PartyHostController(
     ): String {
         val room = hostedRoom(session) ?: return "redirect:/party/host"
         room.mutex.withLock {
-            saveSettings(room, bonusNeedsSecond, timeLimit, limitThemes, rounds)
+            saveSettings(room, timeLimit, limitThemes, rounds)
         }
         return "redirect:/party/host"
     }
@@ -132,7 +130,6 @@ class PartyHostController(
     /** Clears every theme's "used" flags. Only from the computer running the app. */
     @PostMapping("/party/host/reset-used")
     suspend fun resetUsed(
-        @RequestParam(defaultValue = "false") bonusNeedsSecond: Boolean,
         @RequestParam(defaultValue = "false") timeLimit: Boolean,
         @RequestParam(defaultValue = "false") limitThemes: Boolean,
         @RequestParam(required = false) rounds: List<Int>?,
@@ -143,7 +140,7 @@ class PartyHostController(
         if (!isHostComputer(request)) return "redirect:/party/host"
         val saved = withContext(Dispatchers.IO) { themeLoader.resetUsed() }
         room.mutex.withLock {
-            saveSettings(room, bonusNeedsSecond, timeLimit, limitThemes, rounds)
+            saveSettings(room, timeLimit, limitThemes, rounds)
             room.notice = if (saved) null else "Couldn't reset the used questions in every theme file."
             room.touch()
         }
@@ -154,7 +151,6 @@ class PartyHostController(
     @PostMapping("/party/host/remove-theme")
     suspend fun removeTheme(
         @RequestParam theme: String,
-        @RequestParam(defaultValue = "false") bonusNeedsSecond: Boolean,
         @RequestParam(defaultValue = "false") timeLimit: Boolean,
         @RequestParam(defaultValue = "false") limitThemes: Boolean,
         @RequestParam(required = false) rounds: List<Int>?,
@@ -166,7 +162,7 @@ class PartyHostController(
 
         val removed = withContext(Dispatchers.IO) { themeLoader.remove(theme) }
         room.mutex.withLock {
-            saveSettings(room, bonusNeedsSecond, timeLimit, limitThemes, rounds)
+            saveSettings(room, timeLimit, limitThemes, rounds)
             room.notice = if (removed) null else "Couldn't remove that theme."
             room.touch()
         }
@@ -181,7 +177,6 @@ class PartyHostController(
     @PostMapping("/party/host/hide-theme")
     suspend fun toggleHidden(
         @RequestParam theme: String,
-        @RequestParam(defaultValue = "false") bonusNeedsSecond: Boolean,
         @RequestParam(defaultValue = "false") timeLimit: Boolean,
         @RequestParam(defaultValue = "false") limitThemes: Boolean,
         @RequestParam(required = false) rounds: List<Int>?,
@@ -190,7 +185,7 @@ class PartyHostController(
         val room = hostedRoom(session) ?: return "redirect:/party/host"
         val known = withContext(Dispatchers.IO) { themeLoader.load().themes }.any { it.id == theme }
 
-        room.mutex.withLock { saveSettings(room, bonusNeedsSecond, timeLimit, limitThemes, rounds) }
+        room.mutex.withLock { saveSettings(room, timeLimit, limitThemes, rounds) }
         if (known) toggle(room, theme)
         return "redirect:/party/host"
     }
@@ -234,7 +229,6 @@ class PartyHostController(
     /** Starts the game with everyone in the lobby, in join order, and locks the settings. */
     @PostMapping("/party/host/start")
     suspend fun start(
-        @RequestParam(defaultValue = "false") bonusNeedsSecond: Boolean,
         @RequestParam(defaultValue = "false") timeLimit: Boolean,
         @RequestParam(defaultValue = "false") limitThemes: Boolean,
         @RequestParam(required = false) rounds: List<Int>?,
@@ -245,7 +239,7 @@ class PartyHostController(
 
         room.mutex.withLock {
             if (room.phase != RoomPhase.LOBBY) return "redirect:/party/host"
-            saveSettings(room, bonusNeedsSecond, timeLimit, limitThemes, rounds)
+            saveSettings(room, timeLimit, limitThemes, rounds)
 
             room.notice = when {
                 room.roundCounts.values.sum() == 0 -> "Choose at least one round to start."
@@ -257,7 +251,6 @@ class PartyHostController(
             if (room.notice == null) {
                 room.party = ThemePartyGame(
                     players = room.lobby.map { PartyPlayer(it.playerId, it.name) },
-                    bonusNeedsSecond = bonusNeedsSecond,
                     timeLimit = timeLimit,
                     roundCounts = room.roundCounts,
                     limitThemes = room.limitThemes,
@@ -291,7 +284,6 @@ class PartyHostController(
      */
     private fun saveSettings(
         room: GameRoom,
-        bonusNeedsSecond: Boolean,
         timeLimit: Boolean,
         limitThemes: Boolean,
         rounds: List<Int>?
@@ -301,7 +293,6 @@ class PartyHostController(
         if (rounds?.size == difficulties.size) {
             room.roundCounts = difficulties.zip(rounds.map { it.coerceIn(ROUND_OPTIONS) }).toMap()
         }
-        room.bonusNeedsSecond = bonusNeedsSecond
         room.timeLimit = timeLimit
         room.limitThemes = limitThemes
     }

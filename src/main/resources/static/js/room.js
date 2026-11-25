@@ -251,7 +251,7 @@
       var list = el('ul', 'rules-list');
       var lines = [
         ['Your pick, you’re right', '+1 per player in the game, ' + (-rules.penaltyPerOtherCorrect) +
-          ' for each other player also right' + (rules.bonusNeedsSecond ? ' (needs someone else right too)' : '')],
+          ' for each other player also right'],
         ['Your pick, you’re wrong', (-rules.penaltyPerOtherCorrect) + ' for each player who’s right'],
         ['Someone else’s pick, you’re right', points(rules.guesserPoints)],
         ['⚡ First right answer', points(rules.firstCorrectPoints) + ' extra'],
@@ -359,8 +359,6 @@
       var parts = [];
       if (item.bonus) {
         parts.push(points(item.bonus) + ' correct');
-      } else if (item.pickerCorrect) {
-        parts.push('correct, but no bonus without a second correct answer');
       } else {
         parts.push('not correct');
       }
@@ -403,8 +401,7 @@
       } else if (party.stage !== 'lobby' && party.stage !== 'finished') {
         content.appendChild(el('p', 'question-meta',
           'Round ' + party.round + ' of ' + party.rounds + ' (' + party.difficulty + '). ' +
-          (party.yourPick ? 'Your turn' : party.picker + "'s turn") +
-          (party.bonusNeedsSecond ? '. Bonus needs a second correct answer.' : '.')));
+          (party.yourPick ? 'Your turn.' : party.picker + "'s turn.")));
       }
       if (latest.notice) { content.appendChild(el('p', 'error', latest.notice)); }
 

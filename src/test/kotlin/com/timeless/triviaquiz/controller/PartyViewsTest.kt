@@ -31,7 +31,7 @@ class PartyViewsTest {
     private fun roomWithPick(): GameRoom = GameRoom("ABCD", RoomMode.THEME_PARTY).apply {
         listOf("a", "b").forEach { lobby.add(LobbyPlayer(it, it.uppercase(), emptyList())) }
         party = ThemePartyGame(
-            lobby.map { PartyPlayer(it.playerId, it.name) }, false, themeFlash = Duration.ofSeconds(1)
+            lobby.map { PartyPlayer(it.playerId, it.name) }, themeFlash = Duration.ofSeconds(1)
         ).also { it.pickTheme("a", theme, start) }
     }
 
@@ -47,12 +47,12 @@ class PartyViewsTest {
 
     @Test
     fun `the lobby sends the scoring guide with the host's current settings`() {
-        val room = GameRoom("ABCD", RoomMode.THEME_PARTY).apply { bonusNeedsSecond = true }
+        val room = GameRoom("ABCD", RoomMode.THEME_PARTY).apply { limitThemes = true }
 
         val rules = buildPartyView(room, null, emptyList(), start).rules
 
         assertNotNull(rules)
-        assertEquals(true, rules.bonusNeedsSecond)
+        assertEquals(true, rules.limitThemes)
         assertNull(buildPartyView(roomWithPick(), "b", emptyList(), start).rules, "only in the lobby")
     }
 

@@ -78,7 +78,7 @@ class PartyTurn(
  * [MultiplayerGame] it has no Spring or network dependencies: time is passed in, and the caller
  * provides the locking ([GameRoom.mutex]).
  *
- * [bonusNeedsSecond], [timeLimit], [limitThemes] and the round counts are fixed at construction,
+ * [timeLimit], [limitThemes] and the round counts are fixed at construction,
  * which is what locks the host's settings for the game.
  *
  * [themeFlash] is how long only the theme name shows before the question does. Answers are refused
@@ -93,7 +93,6 @@ class PartyTurn(
  */
 class ThemePartyGame(
     players: List<PartyPlayer>,
-    val bonusNeedsSecond: Boolean,
     val timeLimit: Boolean = false,
     roundCounts: Map<String, Int> = DEFAULT_ROUND_COUNTS,
     val limitThemes: Boolean = false,
@@ -367,8 +366,7 @@ class ThemePartyGame(
         val score = scoreQuestion(
             pickerCorrect = pickerId in correctIds,
             othersCorrect = correctIds.count { it != pickerId },
-            playerCount = seats.size,
-            bonusNeedsSecond = bonusNeedsSecond
+            playerCount = seats.size
         )
         current.score = score
         current.deadline = null

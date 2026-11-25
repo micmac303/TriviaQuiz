@@ -69,9 +69,6 @@ class GameRoom(val code: String, val mode: RoomMode = RoomMode.CLASSIC) {
     var party: ThemePartyGame? = null
 
     /** The host's lobby setting. A started [ThemePartyGame] keeps its own copy, so it is locked. */
-    var bonusNeedsSecond: Boolean = false
-
-    /** Likewise the host's lobby setting, copied by the game when it starts. */
     var timeLimit: Boolean = false
 
     /** Likewise the host's lobby setting, copied by the game when it starts. */

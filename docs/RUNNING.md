@@ -100,8 +100,8 @@ For your own themes:
 2. On each phone, on the same Wi-Fi, open the address shown on that page and enter a name (for
    players elsewhere, see [Play online with Cloudflare](#4-play-online-with-cloudflare)). You need
    at least 2 players, and nobody can join after the start.
-3. Choose how many rounds of each difficulty (0 to 20) and whether to tick **Random themes**,
-   **Bonus needs a second correct answer** and **Time limit**, then click **Start game**. They are locked until the next game.
+3. Choose how many rounds of each difficulty (0 to 20) and whether to tick **Random themes**
+   and **Time limit**, then click **Start game**. They are locked until the next game.
 4. The default is 3 rounds: 1 easy, 1 medium, then 1 hard. With 10 players that is about 15 minutes. Rounds always go from easiest to
    hardest. In each round every player takes one turn.
 5. On your turn you pick a theme (with **Random themes** on, from 8 random ones), and everyone answers one question from it. An answer can't be changed.
@@ -132,8 +132,7 @@ usually share a session, so they count as one player.
 
 For the picker:
 
-- If right, plus the number of players in the game, counting the picker. With the bonus setting
-  ticked, this only counts if at least one other player is right too.
+- If right, plus the number of players in the game, counting the picker.
 - -1 for each other player who is right, even if the picker is wrong.
 
 For everyone else: +1 if right, whether or not the picker was.
