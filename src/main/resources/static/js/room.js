@@ -100,11 +100,7 @@
         if (!party.players.length) { return 'Waiting for players to join...'; }
         return latest.canStart ? 'Ready when the host starts the game.' : 'Waiting for more players...';
       }
-      if (party.stage === 'finished') {
-        return party.winners.length === 1
-          ? party.winners[0] + ' wins!'
-          : "It's a tie: " + party.winners.join(', ');
-      }
+      if (party.stage === 'finished') { return 'Game over'; }
       if (party.stage === 'picking') {
         return party.yourPick ? 'Your turn to pick a theme' : party.picker + ' is picking a theme...';
       }
@@ -316,15 +312,36 @@
       content.appendChild(box);
     }
 
+    // A big trophy over the winner's name: for the tiebreak's result and the end of the game.
+    function addTrophy(text) {
+      var banner = el('div', 'trophy-banner');
+      var icon = el('span', 'trophy-icon', '🏆');
+      icon.setAttribute('aria-hidden', 'true');
+      banner.appendChild(icon);
+      banner.appendChild(el('span', 'trophy-text', text));
+      content.appendChild(banner);
+    }
+
+    function addWinnerTrophy(party) {
+      if (!party.winners.length) { return; }
+      var you = party.players.filter(function (player) { return player.you; })[0];
+      if (party.winners.length === 1) {
+        addTrophy(you && you.name === party.winners[0] ? 'YOU WIN!' : party.winners[0].toUpperCase() + ' WINS!');
+      } else {
+        addTrophy("IT'S A TIE: " + party.winners.join(' & ').toUpperCase());
+      }
+    }
+
     // A tiebreak question's reveal: who won, or that nobody did and another question follows.
     function addTiebreakReveal(party, canAnswer, inGame) {
       var item = party.reveal;
       var winner = party.players.filter(function (player) { return player.first; })[0];
-      var text = winner
-        ? '🏆 ' + (winner.you ? 'YOU WIN' : winner.name.toUpperCase() + ' WINS') + ' THE TIEBREAKER ' +
-          points(item.tiebreakPoints)
-        : 'NOBODY GOT IT: ANOTHER QUESTION';
-      content.appendChild(el('div', 'result-banner ' + (winner ? 'right' : 'wrong'), text));
+      if (winner) {
+        addTrophy((winner.you ? 'YOU WIN' : winner.name.toUpperCase() + ' WINS') + ' THE TIEBREAKER ' +
+          points(item.tiebreakPoints));
+      } else {
+        content.appendChild(el('div', 'result-banner wrong', 'NOBODY GOT IT: ANOTHER QUESTION'));
+      }
 
       var card = el('fieldset');
       card.appendChild(el('p', 'question-text', item.question));
@@ -404,6 +421,7 @@
           (party.yourPick ? 'Your turn.' : party.picker + "'s turn.")));
       }
       if (latest.notice) { content.appendChild(el('p', 'error', latest.notice)); }
+      if (party.stage === 'finished') { addWinnerTrophy(party); }
 
       // The theme flash: the server holds the question back for a moment after the pick.
       if (party.stage === 'answering' && !party.question) {
